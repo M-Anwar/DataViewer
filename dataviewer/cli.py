@@ -1,18 +1,18 @@
-import time
-
 import click
 import uvicorn
 from pydanclick import from_pydantic
-from pydantic import BaseModel
 from rich import print
-from rich.progress import track
 
-from app import app as fastapi_app
-from config import ViewArgs, set_config
+from dataviewer.app import app as fastapi_app
+from dataviewer.config import ViewArgs, set_config
 
 
 @click.group()
 def main():
+    """
+    Dataviewer - A DuckDB + Lance Powered Data Viewer for Multi-Modal Datasets
+    """
+
     pass
 
 
@@ -46,6 +46,9 @@ def generate_config(output: str):
 @main.command("view")
 @from_pydantic(ViewArgs)
 def view(view_args: ViewArgs):
+    """
+    Start the DataViewer UI web application
+    """
     print(r"""
     ______      _        _   _ _                        
     |  _  \    | |      | | | (_)                       
@@ -55,7 +58,6 @@ def view(view_args: ViewArgs):
     |___/ \__,_|\__\__,_|\___/|_|\___| \_/\_/ \___|_|  
                         DataViewer
     """)
-    global config
     if not view_args.dataset_path:
         raise click.BadParameter(
             "dataset_path is required", param_hint="--dataset-path"
