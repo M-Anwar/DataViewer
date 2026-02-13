@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 
-from config import get_config
+from dataviewer.config import get_config
 
 app = FastAPI(title="Data Viewer")
 
