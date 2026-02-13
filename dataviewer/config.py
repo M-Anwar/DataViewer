@@ -49,7 +49,7 @@ class ViewArgs(BaseModel):
 config: ViewArgs | None = None
 
 
-def set_config(view_args: ViewArgs):
+def set_config(view_args: ViewArgs) -> None:
     global config
     config = view_args
 

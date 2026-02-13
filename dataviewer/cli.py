@@ -8,7 +8,7 @@ from dataviewer.config import ViewArgs, set_config
 
 
 @click.group()
-def main():
+def main() -> None:
     """
     Dataviewer - A DuckDB + Lance Powered Data Viewer for Multi-Modal Datasets
     """
@@ -22,7 +22,7 @@ def main():
     type=click.Path(),
     default="example_config.json",
 )
-def generate_config(output: str):
+def generate_config(output: str) -> None:
     """
     Generates an example config file for the Data Viewer application.
     Defaults to "example_config.json" in the current directory.
@@ -45,23 +45,21 @@ def generate_config(output: str):
 
 @main.command("view")
 @from_pydantic(ViewArgs)
-def view(view_args: ViewArgs):
+def view(view_args: ViewArgs) -> None:
     """
     Start the DataViewer UI web application
     """
     print(r"""
-    ______      _        _   _ _                        
-    |  _  \    | |      | | | (_)                       
-    | | | |__ _| |_ __ _| | | |_  _____      _____ _ __ 
+    ______      _        _   _ _
+    |  _  \    | |      | | | (_)
+    | | | |__ _| |_ __ _| | | |_  _____      _____ _ __
     | | | / _` | __/ _` | | | | |/ _ \ \ /\ / / _ \ '__|
-    | |/ / (_| | || (_| \ \_/ / |  __/\ V  V /  __/ |   
-    |___/ \__,_|\__\__,_|\___/|_|\___| \_/\_/ \___|_|  
+    | |/ / (_| | || (_| \ \_/ / |  __/\ V  V /  __/ |
+    |___/ \__,_|\__\__,_|\___/|_|\___| \_/\_/ \___|_|
                         DataViewer
     """)
     if not view_args.dataset_path:
-        raise click.BadParameter(
-            "dataset_path is required", param_hint="--dataset-path"
-        )
+        raise click.BadParameter("dataset_path is required", param_hint="--dataset-path")
 
     host = "127.0.0.1"
     port = view_args.port or 8000
