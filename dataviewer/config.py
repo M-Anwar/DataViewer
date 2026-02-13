@@ -1,6 +1,9 @@
+import os
 from functools import lru_cache
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+
+DEFAULT_CACHE_PATH = os.path.expanduser("~/.cache/dataviewer")
 
 
 class ViewArgs(BaseModel):
@@ -42,7 +45,15 @@ class ViewArgs(BaseModel):
 
     # Configuration
     port: int | None = None
+    cache_path: str | None = None
+    table_hash: str | None = None
     config: str | None = None
+
+    @model_validator(mode="after")
+    def _set_default_cache_path(self) -> "ViewArgs":
+        if self.cache_path is None:
+            self.cache_path = DEFAULT_CACHE_PATH
+        return self
 
 
 # Singleton config for the application
