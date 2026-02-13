@@ -1,5 +1,7 @@
 ### Project is WIP
 
+[![Unit Tests](https://github.com/M-Anwar/DataViewer/actions/workflows/pre-commit.yml/badge.svg?branch=main)](https://github.com/M-Anwar/DataViewer/actions/workflows/pre-commit.yml)
+
 ## Development
 
 1. Clone the repo.
