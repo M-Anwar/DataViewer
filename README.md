@@ -1,17 +1,13 @@
 ### Project is WIP
 
-## Installation (editable)
-```bash
-pip install -e .
-```
-Installing in editable mode keeps the `dataviewer` CLI wired up to your working tree so code changes are reflected the next time you run a command.
+## Development
 
-## CLI usage
-- Start the UI for a dataset:
-	```bash
-	dataviewer view --dataset-path hello.parquet
-	```
-- Generate a starter config file you can tweak and pass via `--config`:
-	```bash
-	dataviewer generate-config ./example_config.json
-	```
+1. Clone the repo.
+2. Install dependencies with uv:
+   ```bash
+   uv sync
+   ```
+3. Install pre-commit hooks:
+   ```bash
+   pre-commit install
+   ```
