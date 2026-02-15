@@ -1,6 +1,11 @@
 import pytest
 
-from dataviewer.data_indexing import DatasetFormat, _dataset_name, _infer_format
+from dataviewer.data_indexing import (
+    DatasetFormat,
+    _dataset_name,
+    _get_columns,
+    _infer_format,
+)
 
 
 @pytest.mark.parametrize(
@@ -49,3 +54,55 @@ def test_infer_format_supported(dataset_path: str, expected: DatasetFormat) -> N
 def test_infer_format_unsupported(dataset_path: str) -> None:
     with pytest.raises(ValueError, match="Unsupported dataset format"):
         _infer_format(dataset_path)
+
+
+def test_get_columns_no_filters_returns_all() -> None:
+    all_columns = ["id", "name", "age"]
+
+    result = _get_columns(all_columns, include_cols=None, exclude_cols=None)
+
+    assert set(result) == set(all_columns)
+
+
+def test_get_columns_include_only_limits_columns() -> None:
+    all_columns = ["id", "name", "age"]
+    include_cols = ["name", "age"]
+
+    result = _get_columns(all_columns, include_cols=include_cols, exclude_cols=None)
+
+    assert set(result) == set(include_cols)
+
+
+def test_get_columns_exclude_only_removes_columns() -> None:
+    all_columns = ["id", "name", "age"]
+    exclude_cols = ["age"]
+
+    result = _get_columns(all_columns, include_cols=None, exclude_cols=exclude_cols)
+
+    assert set(result) == {"id", "name"}
+
+
+def test_get_columns_include_then_exclude() -> None:
+    all_columns = ["id", "name", "age", "city"]
+    include_cols = ["id", "name", "age"]
+    exclude_cols = ["age"]
+
+    result = _get_columns(all_columns, include_cols=include_cols, exclude_cols=exclude_cols)
+
+    assert set(result) == {"id", "name"}
+
+
+def test_get_columns_invalid_include_raises() -> None:
+    all_columns = ["id", "name", "age"]
+    include_cols = ["name", "missing"]
+
+    with pytest.raises(ValueError, match="Included columns not found in dataset"):
+        _get_columns(all_columns, include_cols=include_cols, exclude_cols=None)
+
+
+def test_get_columns_invalid_exclude_raises() -> None:
+    all_columns = ["id", "name", "age"]
+    exclude_cols = ["missing"]
+
+    with pytest.raises(ValueError, match="Excluded columns not found in dataset"):
+        _get_columns(all_columns, include_cols=None, exclude_cols=exclude_cols)

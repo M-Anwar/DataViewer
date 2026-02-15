@@ -1,47 +1,48 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-import duckdb
+import ibis
 import lancedb
 from fastapi import Depends
+from ibis.backends.duckdb import Backend
 
-duckdb_conn: duckdb.DuckDBPyConnection | None = None
+GLOBAL_TABLE = "dataset"
+
+ibis_connection: Backend | None = None
 lancedb_conn: lancedb.DBConnection | None = None
 lancedb_table: lancedb.Table | None = None
 
 
 async def initialize_connections(cache_path: str, table_hash: str) -> None:
-    global duckdb_conn, lancedb_conn, lancedb_table
-    duckdb_conn = duckdb.connect(database=":memory:", config={"threads": 4})
+    global ibis_connection, lancedb_conn, lancedb_table
+    ibis_connection = ibis.duckdb.connect(database=":memory:", threads=4)
+    assert ibis_connection is not None, "Failed to initialize Ibis DuckDB connection"
+
     lancedb_conn = lancedb.connect(cache_path)
     lancedb_table = lancedb_conn.open_table(table_hash)
 
-    duckdb_conn.execute("""
+    ibis_connection.con.execute("""
         INSTALL lance FROM community;
         LOAD lance;
     """)
 
-    dataset = lancedb_table.to_lance()
-    duckdb_conn.register("dataset", dataset)
+    dataset = lancedb_table.to_lance().scanner()
+    ibis_connection.con.register(GLOBAL_TABLE, dataset)
 
 
 async def close_connections() -> None:
-    global duckdb_conn, lancedb_conn, lancedb_table
-    if duckdb_conn is not None:
-        duckdb_conn.close()
-        duckdb_conn = None
+    global ibis_connection, lancedb_conn, lancedb_table
+    if ibis_connection is not None:
+        ibis_connection.con.close()
+        ibis_connection = None
     lancedb_table = None
 
 
-async def get_duckdb_connection() -> AsyncGenerator[duckdb.DuckDBPyConnection, None]:
-    global duckdb_conn
-    if duckdb_conn is None:
+async def get_duckdb_connection() -> AsyncGenerator[Backend, None]:
+    global ibis_connection
+    if ibis_connection is None:
         raise ValueError("DuckDB connection not initialized")
-    cursor = duckdb_conn.cursor()
-    try:
-        yield cursor
-    finally:
-        cursor.close()
+    yield ibis_connection
 
 
 async def get_lancedb_table() -> AsyncGenerator[lancedb.Table, None]:
@@ -51,5 +52,5 @@ async def get_lancedb_table() -> AsyncGenerator[lancedb.Table, None]:
     yield lancedb_table
 
 
-DuckDBDep = Annotated[duckdb.DuckDBPyConnection, Depends(get_duckdb_connection)]
+IbisDBDep = Annotated[Backend, Depends(get_duckdb_connection)]
 LanceDBDep = Annotated[lancedb.Table, Depends(get_lancedb_table)]
