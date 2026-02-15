@@ -42,6 +42,7 @@ class ViewArgs(BaseModel):
     # Filtering
     row_start: int | None = None
     row_end: int | None = None
+    limit: int | None = None
 
     # Configuration
     port: int | None = None

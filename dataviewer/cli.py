@@ -8,7 +8,7 @@ from rich import print
 
 from dataviewer.app import app as fastapi_app
 from dataviewer.config import DEFAULT_CACHE_PATH, ViewArgs, set_config
-from dataviewer.data_indexing import build_lance_index
+from dataviewer.data_indexing import build_lance_index, get_data_schema
 
 
 @click.group()
@@ -63,6 +63,16 @@ def clear_cache(cache_path: str) -> None:
         print(f"No cache found at {cache_path}")
 
 
+@main.command("get-schema")
+@click.argument("dataset_path", type=click.Path())
+def get_schema(dataset_path: str) -> None:
+    """
+    Get the schema of a dataset.
+    """
+    schema = get_data_schema(dataset_path)
+    print(schema)
+
+
 @main.command("view")
 @from_pydantic(ViewArgs)
 @click.option("--reindex", is_flag=True, help="Whether to force reindexing of the dataset")
@@ -102,7 +112,7 @@ def view(view_args: ViewArgs, reindex: bool, batch_size: int) -> None:
     view_args.table_hash = table_hash
     set_config(view_args)
 
-    print(f"Starting FastAPI app on {host}:{port} for {view_args.dataset_path}")
+    print(f"Starting UI on {host}:{port} for {view_args.dataset_path}")
     print(view_args)
 
     uvicorn.run(fastapi_app, host=host, port=port)
