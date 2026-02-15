@@ -17,3 +17,5 @@ wheels/
 .venv
 *data/
 
+# Testing configurations
+example_*.json
