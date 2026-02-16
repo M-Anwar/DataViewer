@@ -1,14 +1,52 @@
-@layer tailwind-base, primereact, tailwind-utilities;
+@layer base, primereact, components, utilities;
 
-@import 'primereact/resources/themes/lara-light-blue/theme.css';
-@import 'primereact/resources/primereact.min.css';
-@import 'primeicons/primeicons.css';
+@import "tailwindcss";
 
-@layer tailwind-base {
-  @tailwind base;
+@import "primereact/resources/themes/lara-dark-blue/theme.css" layer(primereact);
+@import "primereact/resources/primereact.min.css" layer(primereact);
+@import "primeicons/primeicons.css" layer(primereact);
+@import "dockview-core/dist/styles/dockview.css" layer(primereact);
+
+body {
+  margin: 0px;
+  height: 100%;
 }
 
-@layer tailwind-utilities {
-  @tailwind components;
-  @tailwind utilities;
+
+.split-pane-divider {
+  background: #ffffff;
+  opacity: 0.2;
+  z-index: 1;
+  box-sizing: border-box;
+  background-clip: padding-box;
+}
+
+.split-pane-divider:hover {
+  transition: all 0.2s ease;
+}
+
+.split-pane-divider.horizontal {
+  width: 13px !important;
+  margin: 0 -5px;
+  border-left: 5px solid rgba(255, 255, 255, 0);
+  border-right: 5px solid rgba(255, 255, 255, 0);
+  cursor: col-resize;
+}
+
+.split-pane-divider.horizontal:hover {
+  border-left: 5px solid rgba(239, 239, 239, 0.5);
+  border-right: 5px solid rgba(239, 239, 239, 0.5);
+}
+
+.split-pane-divider.vertical {
+  height: 13px !important;
+  margin: -5px 0;
+  border-top: 5px solid rgba(255, 255, 255, 0);
+  border-bottom: 5px solid rgba(255, 255, 255, 0);
+  cursor: row-resize;
+}
+
+.split-pane-divider.vertical:hover {
+  border-top: 5px solid rgba(239, 239, 239, 0.5);
+  border-bottom: 5px solid rgba(239, 239, 239, 0.5);
 }
