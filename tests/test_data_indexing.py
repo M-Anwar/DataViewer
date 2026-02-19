@@ -2,9 +2,9 @@ import pytest
 
 from dataviewer.data_indexing import (
     DatasetFormat,
-    _dataset_name,
     _get_columns,
-    _infer_format,
+    get_dataset_name,
+    infer_format,
 )
 
 
@@ -22,7 +22,7 @@ from dataviewer.data_indexing import (
     ],
 )
 def test_dataset_name(dataset_path: str, expected: str) -> None:
-    assert _dataset_name(dataset_path) == expected
+    assert get_dataset_name(dataset_path) == expected
 
 
 @pytest.mark.parametrize(
@@ -40,7 +40,7 @@ def test_dataset_name(dataset_path: str, expected: str) -> None:
     ],
 )
 def test_infer_format_supported(dataset_path: str, expected: DatasetFormat) -> None:
-    assert _infer_format(dataset_path) == expected
+    assert infer_format(dataset_path) == expected
 
 
 @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ def test_infer_format_supported(dataset_path: str, expected: DatasetFormat) -> N
 )
 def test_infer_format_unsupported(dataset_path: str) -> None:
     with pytest.raises(ValueError, match="Unsupported dataset format"):
-        _infer_format(dataset_path)
+        infer_format(dataset_path)
 
 
 def test_get_columns_no_filters_returns_all() -> None:

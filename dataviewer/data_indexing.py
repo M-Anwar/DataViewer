@@ -21,7 +21,7 @@ class DatasetFormat(Enum):
     LANCE = "lance"
 
 
-def _dataset_name(dataset_path: str) -> str:
+def get_dataset_name(dataset_path: str) -> str:
     """
     Extract the dataset name from the given dataset path by removing
     the directory and file extension.
@@ -37,7 +37,7 @@ def _dataset_name(dataset_path: str) -> str:
     return path.stem if path.suffix else path.name
 
 
-def _infer_format(dataset_path: str) -> DatasetFormat:
+def infer_format(dataset_path: str) -> DatasetFormat:
     """
     Infer the dataset format from the file extension or URL scheme.
     Supports CSV, JSON, JSONL, Parquet, and Lance formats.
@@ -163,7 +163,7 @@ def get_data_schema(dataset_path: str) -> pa.Schema:
     :return: The schema of the dataset
     """
 
-    dataset_format = _infer_format(dataset_path)
+    dataset_format = infer_format(dataset_path)
 
     if dataset_format == DatasetFormat.PARQUET:
         return pl.scan_parquet(dataset_path).collect_schema().to_arrow()
@@ -196,8 +196,8 @@ def build_lance_index(view_args: ViewArgs, reindex: bool, batch_size: int) -> st
         raise ValueError("dataset_path is required to build the Lance index")
     assert view_args.cache_path is not None, "cache_path must be set in view_args"
 
-    dataset_name = _dataset_name(view_args.dataset_path)
-    dataset_format = _infer_format(view_args.dataset_path)
+    dataset_name = get_dataset_name(view_args.dataset_path)
+    dataset_format = infer_format(view_args.dataset_path)
     dataset_hash = hashlib.md5(f"{dataset_name}_{dataset_format.value}".encode()).hexdigest()
 
     db = lancedb.connect(view_args.cache_path)
