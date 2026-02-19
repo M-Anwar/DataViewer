@@ -40,10 +40,22 @@ export type Operator =
   | "not in"
   | "between"
 
+export const OPERATOR_OPTIONS: Operator[] = [
+  ">",
+  "<",
+  "==",
+  "!=",
+  ">=",
+  "<=",
+  "in",
+  "not in",
+  "between",
+]
+
 export type Filter = {
   column: string
   operator: Operator
-  value: string | number | Array<string | number>
+  value: string | null | Array<string | null>
   is_column?: boolean
 }
 
@@ -58,6 +70,7 @@ export type SearchRequest = {
   filters?: Filter[]
   sorts?: Sort[]
   raw_query?: string | null
+  coerce_types?: boolean
 }
 
 export type SearchResponse = {
@@ -112,6 +125,7 @@ export const api = {
   },
 
   search(body: SearchRequest, config?: ApiConfig): Promise<SearchResponse> {
+    body.coerce_types = true; // Always coerce types as JS types are all strings
     return request<SearchResponse>(
       "/search",
       {

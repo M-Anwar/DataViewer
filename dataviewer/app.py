@@ -9,6 +9,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 import ibis
+import ibis.expr.datatypes as dt
 import pyarrow as pa
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -16,6 +17,7 @@ from ibis.expr.types.relations import Table
 from pydantic import BaseModel
 
 from dataviewer.config import get_config
+from dataviewer.data_indexing import get_dataset_name, infer_format
 from dataviewer.db import (
     GLOBAL_TABLE,
     IbisDBDep,
@@ -84,8 +86,18 @@ async def ping(request: Request, lance_table: LanceDBDep) -> Base64JSONResponse:
         for field in schema
     ]
 
+    config = get_config()
+    dataset_name = (
+        get_dataset_name(config.dataset_path) if config.dataset_path else "Unknown Dataset"
+    )
+    dataset_format = infer_format(config.dataset_path).value if config.dataset_path else "unknown"
+
     response = {
-        "configuration": get_config().model_dump(),
+        "configuration": {
+            **config.model_dump(),
+            "dataset_name": dataset_name,
+            "dataset_format": dataset_format,
+        },
         "dataset_info": {
             "num_rows": lance_table.count_rows(),
             "num_columns": len(lance_table.schema.names),
@@ -158,15 +170,30 @@ class Operator(StrEnum):
     BETWEEN = "between"
 
 
+type CoercibleValue = str | int | float | bool | None | list[str | int | float | bool | None]
+
+
 class Filter(BaseModel):
     column: str
     operator: Operator
-    value: str | int | float | list[str | int | float]
+    value: CoercibleValue
     is_column: bool = False
 
-    def get_filter(self, table: Table) -> ibis.expr.types.BooleanColumn:
+    def _coerce_value(self, value: str, type: dt.DataType) -> CoercibleValue:
+        """Coerces a string value to the appropriate type based on the column type."""
+        if isinstance(type, dt.Boolean):
+            return value.lower() in ("true", "1", "yes")
+        if isinstance(type, dt.Integer):
+            return int(value)
+        if isinstance(type, dt.Floating | dt.Decimal):
+            return float(value)
+        return value
+
+    def get_filter(self, table: Table, coerce_types: bool = False) -> ibis.expr.types.BooleanColumn:
         col = table[self.column]
         value = table[self.value] if self.is_column else self.value  # type: ignore
+        if coerce_types and not self.is_column:
+            value = self._coerce_value(str(value), col.type())
 
         if not isinstance(value, list):
             if self.operator == Operator.GREATER_THAN:
@@ -206,6 +233,7 @@ class SearchRequest(BaseModel):
     filters: list[Filter] | None = None
     sorts: list[Sort] | None = None
     raw_query: str | None = None
+    coerce_types: bool = False
 
 
 @app.post("/search", response_class=Base64JSONResponse, response_model=None)
@@ -214,7 +242,9 @@ async def search(request: SearchRequest, ibis: IbisDBDep) -> Base64JSONResponse:
 
     # For a raw query, we ignore filters, sorts, and pagination and just execute the query as is
     if not request.raw_query:
-        filter_clauses = [x.get_filter(table) for x in request.filters or []]
+        filter_clauses = [
+            x.get_filter(table, coerce_types=request.coerce_types) for x in request.filters or []
+        ]
         sort_clauses = [
             table[x.column].desc() if x.descending else table[x.column].asc()
             for x in request.sorts or []
