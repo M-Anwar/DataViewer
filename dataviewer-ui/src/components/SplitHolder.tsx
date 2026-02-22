@@ -1,10 +1,11 @@
 import { Splitter, SplitterPanel } from "primereact/splitter";
+import type { ReactNode } from "react";
 
 interface SplitHolderProps {
   splitDirection: "horizontal" | "vertical";
   splitVisible: boolean;
-  mainView: React.ReactNode;
-  auxiliaryView: React.ReactNode;
+  mainView: ReactNode;
+  auxiliaryView: ReactNode;
 }
 
 export default function SplitHolder({
@@ -16,11 +17,23 @@ export default function SplitHolder({
   return (
     <>
       {splitVisible ? (
-        <Splitter layout={splitDirection} className="h-full bg-transparent">
-          <SplitterPanel size={75} minSize={10}>
+        <Splitter
+          layout={splitDirection}
+          className="split-holder h-full w-full min-h-0 min-w-0 bg-transparent"
+        >
+          <SplitterPanel
+            size={75}
+            minSize={10}
+            className="min-h-0 min-w-0 overflow-hidden"
+          >
             {mainView}
           </SplitterPanel>
-          <SplitterPanel minSize={10}>{auxiliaryView}</SplitterPanel>
+          <SplitterPanel
+            minSize={10}
+            className="min-h-0 min-w-0 overflow-hidden"
+          >
+            {auxiliaryView}
+          </SplitterPanel>
         </Splitter>
       ) : (
         mainView

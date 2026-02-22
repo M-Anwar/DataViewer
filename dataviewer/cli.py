@@ -42,7 +42,7 @@ def generate_config(output: str) -> None:
         row_end=100,
         port=8000,
     )
-    print("Generating example config")
+    print("Generating example config to:", output)
     with open(output, "w") as f:
         f.write(example_config.model_dump_json(indent=4, exclude={"config"}))
 

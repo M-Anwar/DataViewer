@@ -10,10 +10,13 @@
 
 html {
     font-size: 12px;
+    overscroll-behavior-x: none;
 }
 body {
   margin: 0px;
   height: 100%;
+  overscroll-behavior-x: none;
+
 }
 
 .no-focus:focus,
@@ -58,4 +61,39 @@ body {
   bottom: 0;
   z-index: 3;
   background: var(--surface-100);
+}
+
+.hidden-columns-select .p-multiselect-label-container {
+  display: block;
+}
+
+.hidden-columns-select .p-multiselect-label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.hidden-columns-select .p-multiselect-token {
+  max-width: 100%;
+}
+
+.split-holder.p-splitter {
+  border: 0;
+}
+
+.split-holder .p-splitter-panel {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.split-holder .p-splitter-gutter {
+  flex-shrink: 0;
 }
