@@ -1,3 +1,7 @@
+import type {
+  RowPanelOpenParams,
+  RowPanelType,
+} from "@/components/RowPanels/types";
 import { useApp } from "@/contexts/AppContext";
 import { useData } from "@/hooks/useData";
 import * as api from "@/services/api";
@@ -30,6 +34,7 @@ interface DataViewerProps {
   sqlQuery?: string;
   searchMode: "Quick Filters" | "SQL Editor";
   onRegisterSearch?: (searchFn: () => void) => void;
+  onOpenRowPanel?: (panel: RowPanelOpenParams) => void;
 }
 
 type TableRow = {
@@ -59,6 +64,7 @@ function isSimpleSchemaType(typeText: string): boolean {
     normalized === "large_string" ||
     normalized === "bool" ||
     normalized === "boolean" ||
+    normalized === "double" ||
     normalized.startsWith("int") ||
     normalized.startsWith("uint") ||
     normalized.startsWith("float") ||
@@ -156,6 +162,7 @@ export default function DataViewer({
   sqlQuery,
   searchMode,
   onRegisterSearch,
+  onOpenRowPanel,
 }: DataViewerProps) {
   const { pingResult, error: appError, globalConfig } = useApp();
   const { data, schema, total_rows, execution_time_ms, isLoading, search } =
@@ -166,7 +173,6 @@ export default function DataViewer({
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
   const [rowFontSize, setRowFontSize] = useState(0.95);
-  const [frozenColumns] = useState<string[]>([]);
   const [shouldPageSearch, setShouldPageSearch] = useState(false);
   const [isCellSidebarVisible, setCellSidebarVisible] = useState(false);
   const [selectedCell, setSelectedCell] = useState<SelectedCellPreview | null>(
@@ -175,16 +181,60 @@ export default function DataViewer({
   const [contextMenuRow, setContextMenuRow] = useState<TableRow | null>(null);
   const rowContextMenuRef = useRef<ContextMenu>(null);
 
+  const configuration = useMemo(
+    () => pingResult?.configuration as ViewerConfiguration | undefined,
+    [pingResult],
+  );
+
+  const resolveContextMenuRowId = useCallback((): string | null => {
+    if (!contextMenuRow) {
+      return null;
+    }
+
+    const sourceRow = data[contextMenuRow.__rowIndex];
+    if (!sourceRow) {
+      return null;
+    }
+
+    const idColumnName = configuration?.id_column;
+    if (idColumnName) {
+      const idValue = sourceRow[idColumnName];
+      if (idValue !== undefined && idValue !== null && String(idValue) !== "") {
+        return String(idValue);
+      }
+    }
+
+    return null;
+  }, [configuration?.id_column, contextMenuRow, data]);
+
+  const handleOpenRowViewer = useCallback(
+    (type: RowPanelType) => {
+      if (!onOpenRowPanel) {
+        return;
+      }
+
+      const rowId = resolveContextMenuRowId();
+      if (!rowId) {
+        return;
+      }
+
+      onOpenRowPanel({ id: rowId, type });
+    },
+    [onOpenRowPanel, resolveContextMenuRowId],
+  );
+
   const rowContextMenuItems = useMemo<MenuItem[]>(
     () => [
       {
         label: "Open Default Row Viewer",
+        command: () => handleOpenRowViewer("default"),
       },
       {
         label: "Open Custom Row Viewer",
+        command: () => handleOpenRowViewer("custom"),
       },
     ],
-    [],
+    [handleOpenRowViewer],
   );
 
   const handleSearch = useCallback(() => {
@@ -237,15 +287,12 @@ export default function DataViewer({
     setShouldPageSearch(true);
   }, []);
 
-  const configuration = useMemo(
-    () => pingResult?.configuration as ViewerConfiguration | undefined,
-    [pingResult],
-  );
-
   const hiddenColumns = useMemo(
     () => new Set(globalConfig.hidden_columns),
     [globalConfig.hidden_columns],
   );
+
+  const frozenColumns = globalConfig.frozen_columns;
 
   const orderedFields = useMemo(() => {
     const fieldsByName = new Map(schema.map((field) => [field.name, field]));
@@ -378,6 +425,7 @@ export default function DataViewer({
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       <ContextMenu
         model={rowContextMenuItems}
+        className="data-viewer-row-context-menu"
         ref={rowContextMenuRef}
         onHide={() => setContextMenuRow(null)}
       />

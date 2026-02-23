@@ -1,7 +1,11 @@
+import type { RowPanelOpenParams } from "@/components/RowPanels/types";
 import { type Filter } from "@/services/api";
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import DataViewer from "./components/DataViewer/DataViewer";
 import { Header } from "./components/Header";
+import RowDockManager, {
+  type RowPanelParams,
+} from "./components/RowDockManager";
 import SplitHolder from "./components/SplitHolder";
 import { AppProvider } from "./contexts/AppContext";
 
@@ -9,6 +13,7 @@ type DockMode = "hidden" | "horizontal" | "vertical";
 
 function App() {
   const [dockMode, setDockMode] = useState<DockMode>("hidden");
+  const [rowPanels, setRowPanels] = useState<RowPanelParams[]>([]);
 
   const [filters, setFilters] = useState<Filter[]>([]);
   const [sqlQuery, setSQLQuery] = useState<string>(
@@ -18,6 +23,29 @@ function App() {
     "Quick Filters",
   );
   const dataViewerSearchRef = useRef<(() => void) | null>(null);
+
+  const handleRegisterSearch = useCallback((searchFn: () => void) => {
+    dataViewerSearchRef.current = searchFn;
+  }, []);
+
+  const handleOpenRowPanel = useCallback((panel: RowPanelOpenParams) => {
+    setDockMode((currentMode) =>
+      currentMode === "hidden" ? "horizontal" : currentMode,
+    );
+
+    setRowPanels((previousPanels) => {
+      const nextSequence = previousPanels.length + 1;
+
+      return [
+        ...previousPanels,
+        {
+          id: panel.id,
+          type: panel.type,
+          panelId: `row-panel-${nextSequence}-${panel.id}-${panel.type}`,
+        },
+      ];
+    });
+  }, []);
 
   const onAddFilter = (filter: Filter) => {
     setFilters((prev) => [...prev, filter]);
@@ -51,6 +79,21 @@ function App() {
     });
   };
 
+  const mainView = useMemo(
+    () => (
+      <div className="h-full w-full min-h-0 min-w-0 flex flex-col overflow-hidden">
+        <DataViewer
+          filters={filters}
+          sqlQuery={sqlQuery}
+          searchMode={searchMode}
+          onRegisterSearch={handleRegisterSearch}
+          onOpenRowPanel={handleOpenRowPanel}
+        />
+      </div>
+    ),
+    [filters, handleOpenRowPanel, handleRegisterSearch, searchMode, sqlQuery],
+  );
+
   return (
     <AppProvider>
       <div className="fixed inset-0 flex min-h-0 min-w-0 flex-col">
@@ -71,22 +114,12 @@ function App() {
           <SplitHolder
             splitDirection={splitDirection}
             splitVisible={splitVisible}
-            mainView={
-              <div className="h-full w-full min-h-0 min-w-0 flex flex-col overflow-hidden">
-                <DataViewer
-                  filters={filters}
-                  sqlQuery={sqlQuery}
-                  searchMode={searchMode}
-                  onRegisterSearch={(searchFn) => {
-                    dataViewerSearchRef.current = searchFn;
-                  }}
-                />
-              </div>
-            }
+            mainView={mainView}
             auxiliaryView={
-              <div className="h-full w-full min-h-0 min-w-0 overflow-auto grid place-items-center text-center">
-                <h1>Hello World</h1>
-              </div>
+              <RowDockManager
+                panels={rowPanels}
+                onPanelsChange={setRowPanels}
+              />
             }
           />
         </div>

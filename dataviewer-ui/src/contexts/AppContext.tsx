@@ -11,6 +11,7 @@ import {
 
 type GlobalConfigState = {
   hidden_columns: string[];
+  frozen_columns: string[];
 };
 
 type GlobalConfigAction = {
@@ -20,6 +21,7 @@ type GlobalConfigAction = {
 
 const DEFAULT_GLOBAL_CONFIG: GlobalConfigState = {
   hidden_columns: [],
+  frozen_columns: [],
 };
 
 const globalConfigReducer = (
@@ -32,11 +34,16 @@ const globalConfigReducer = (
         action.payload.hidden_columns === undefined
           ? state.hidden_columns
           : action.payload.hidden_columns;
+      const nextFrozenColumns =
+        action.payload.frozen_columns === undefined
+          ? state.frozen_columns
+          : action.payload.frozen_columns;
 
       return {
         ...state,
         ...action.payload,
         hidden_columns: nextHiddenColumns,
+        frozen_columns: nextFrozenColumns,
       };
     }
     default:
@@ -64,6 +71,7 @@ interface AppContextType {
   facetError: Error | null;
   globalConfig: GlobalConfigState;
   setHiddenColumns: (columns: string[]) => void;
+  setFrozenColumns: (columns: string[]) => void;
   updateGlobalConfig: (updates: Partial<GlobalConfigState>) => void;
 }
 
@@ -130,6 +138,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setFrozenColumns = useCallback((columns: string[]) => {
+    dispatchGlobalConfig({
+      type: "UPDATE_CONFIG",
+      payload: {
+        frozen_columns: columns,
+      },
+    });
+  }, []);
+
   const updateGlobalConfig = useCallback(
     (updates: Partial<GlobalConfigState>) => {
       dispatchGlobalConfig({
@@ -152,6 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         facetError,
         globalConfig,
         setHiddenColumns,
+        setFrozenColumns,
         updateGlobalConfig,
       }}
     >

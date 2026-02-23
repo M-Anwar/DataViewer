@@ -15,29 +15,26 @@ export default function SplitHolder({
   auxiliaryView,
 }: SplitHolderProps) {
   return (
-    <>
-      {splitVisible ? (
-        <Splitter
-          layout={splitDirection}
-          className="split-holder h-full w-full min-h-0 min-w-0 bg-transparent"
-        >
-          <SplitterPanel
-            size={75}
-            minSize={10}
-            className="min-h-0 min-w-0 overflow-hidden"
-          >
-            {mainView}
-          </SplitterPanel>
-          <SplitterPanel
-            minSize={10}
-            className="min-h-0 min-w-0 overflow-hidden"
-          >
-            {auxiliaryView}
-          </SplitterPanel>
-        </Splitter>
-      ) : (
-        mainView
-      )}
-    </>
+    <Splitter
+      layout={splitDirection}
+      className={`split-holder h-full w-full min-h-0 min-w-0 bg-transparent ${
+        splitVisible ? "" : "split-holder--collapsed"
+      }`}
+    >
+      <SplitterPanel
+        size={splitVisible ? 75 : 100}
+        minSize={10}
+        className="min-h-0 min-w-0 overflow-hidden"
+      >
+        {mainView}
+      </SplitterPanel>
+      <SplitterPanel
+        size={splitVisible ? 25 : 0}
+        minSize={0}
+        className="min-h-0 min-w-0 overflow-hidden"
+      >
+        {auxiliaryView}
+      </SplitterPanel>
+    </Splitter>
   );
 }

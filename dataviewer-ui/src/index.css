@@ -5,7 +5,7 @@
 @import "primereact/resources/themes/lara-dark-blue/theme.css" layer(primereact);
 @import "primereact/resources/primereact.min.css" layer(primereact);
 @import "primeicons/primeicons.css" layer(primereact);
-@import "dockview-core/dist/styles/dockview.css" layer(primereact);
+@import "dockview/dist/styles/dockview.css" layer(primereact);
 
 
 html {
@@ -63,6 +63,14 @@ body {
   background: var(--surface-100);
 }
 
+.data-viewer-row-context-menu.p-contextmenu {
+  min-width: 18rem;
+}
+
+.data-viewer-row-context-menu .p-menuitem-text {
+  white-space: nowrap;
+}
+
 .hidden-columns-select .p-multiselect-label-container {
   display: block;
 }
@@ -96,4 +104,26 @@ body {
 
 .split-holder .p-splitter-gutter {
   flex-shrink: 0;
+}
+
+.split-holder.split-holder--collapsed .p-splitter-gutter {
+  display: none;
+}
+
+.split-holder.split-holder--collapsed .p-splitter-panel:last-child {
+  display: none;
+}
+
+.default-row-panel-tree.p-tree {
+  padding: 0;
+}
+
+.default-row-panel-tree .p-treenode-content {
+  padding-top: 0.0rem;
+  padding-bottom: 0.0rem;
+}
+
+.default-row-panel-tree .p-treenode{
+  padding-top: 0.0rem;
+  padding-bottom: 0.0rem;
 }

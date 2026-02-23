@@ -47,7 +47,8 @@ export function Header({
   onToggleSplitMode,
   setSearchMode,
 }: HeaderProps) {
-  const { pingResult, globalConfig, setHiddenColumns } = useApp();
+  const { pingResult, globalConfig, setHiddenColumns, setFrozenColumns } =
+    useApp();
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   const datasetPath = pingResult?.configuration?.dataset_path as
@@ -151,9 +152,13 @@ export function Header({
           position="right"
           onHide={() => setIsSidebarVisible(false)}
           className="w-3xl"
+          header="Settings"
         >
           <div className="flex gap-4 items-center">
-            <Badge value={`Num Rows: ${numRows}`} size="large" />
+            <Badge
+              value={`Num Rows: ${numRows?.toLocaleString()}`}
+              size="large"
+            />
             <Tooltip target=".dataset-name" />
             <div
               className="dataset-name w-fit"
@@ -172,6 +177,17 @@ export function Header({
                 </pre>
               </div>
             </Panel>
+            <Panel header="Schema" toggleable collapsed>
+              <div className="overflow-auto">
+                <pre>
+                  {JSON.stringify(
+                    pingResult?.dataset_info?.full_schema,
+                    null,
+                    2,
+                  ) || "No Schema"}
+                </pre>
+              </div>
+            </Panel>
             <div className="flex flex-col gap-2 mt-4">
               <label
                 htmlFor="hidden-columns-select"
@@ -185,6 +201,26 @@ export function Header({
                 value={globalConfig.hidden_columns}
                 onChange={(event: MultiSelectChangeEvent) =>
                   setHiddenColumns(event.value as string[])
+                }
+                display="chip"
+                filter
+                placeholder="Select columns"
+                className="w-full hidden-columns-select"
+              />
+            </div>
+            <div className="flex flex-col gap-2 mt-4">
+              <label
+                htmlFor="frozen-columns-select"
+                className="text-lg font-medium"
+              >
+                Frozen Columns
+              </label>
+              <MultiSelect
+                inputId="frozen-columns-select"
+                options={hiddenColumnOptions}
+                value={globalConfig.frozen_columns}
+                onChange={(event: MultiSelectChangeEvent) =>
+                  setFrozenColumns(event.value as string[])
                 }
                 display="chip"
                 filter
