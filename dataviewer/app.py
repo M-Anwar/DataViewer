@@ -7,14 +7,18 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
+from pathlib import Path
 
 import ibis
 import ibis.expr.datatypes as dt
 import pyarrow as pa
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from ibis.expr.types.relations import Table
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import Response
+from starlette.staticfiles import StaticFiles
 
 from dataviewer.config import get_config
 from dataviewer.data_indexing import get_dataset_name, infer_format
@@ -28,6 +32,22 @@ from dataviewer.db import (
 from dataviewer.row_visualizer_plugin import RowVisualizerPlugin, load_plugin
 
 row_visualizer_plugin: RowVisualizerPlugin[BaseModel] | None = None
+
+FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "webui"
+FRONTEND_INDEX_FILE = FRONTEND_BUILD_DIR / "index.html"
+
+
+class SPAStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: dict[str, object]) -> Response:  # type: ignore[override]
+        if path == "api" or path.startswith("api/"):
+            raise StarletteHTTPException(status_code=404)
+
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or not FRONTEND_INDEX_FILE.exists():
+                raise
+            return await super().get_response("index.html", scope)
 
 
 @asynccontextmanager
@@ -83,10 +103,16 @@ class Base64JSONResponse(JSONResponse):
         ).encode("utf-8")
 
 
-app = FastAPI(title="Data Viewer", lifespan=lifespan)
+app = FastAPI(
+    title="Data Viewer",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
 
-@app.get("/ping", response_class=Base64JSONResponse, response_model=None)
+@app.get("/api/ping", response_class=Base64JSONResponse, response_model=None)
 async def ping(request: Request, lance_table: LanceDBDep) -> Base64JSONResponse:
     schema: pa.Schema = lance_table.schema
 
@@ -133,7 +159,7 @@ class FacetResponse(BaseModel):
 _FACETS_CACHE: FacetResponse | None = None
 
 
-@app.get("/facets", response_model=FacetResponse)
+@app.get("/api/facets", response_model=FacetResponse)
 async def get_facets(ibis: IbisDBDep) -> FacetResponse:
     """Get facet information for pre-configured facet columns."""
     global _FACETS_CACHE
@@ -245,7 +271,7 @@ class SearchRequest(BaseModel):
     coerce_types: bool = False
 
 
-@app.post("/search", response_class=Base64JSONResponse, response_model=None)
+@app.post("/api/search", response_class=Base64JSONResponse, response_model=None)
 async def search(request: SearchRequest, ibis: IbisDBDep) -> Base64JSONResponse:
     try:
         table = ibis.table(GLOBAL_TABLE)
@@ -304,7 +330,7 @@ async def search(request: SearchRequest, ibis: IbisDBDep) -> Base64JSONResponse:
         )
 
 
-@app.get("/select", response_class=Base64JSONResponse, response_model=None)
+@app.get("/api/select", response_class=Base64JSONResponse, response_model=None)
 async def select_by_id(id: str, ibis: IbisDBDep) -> Base64JSONResponse:
     config = get_config()
     if not config.id_column:
@@ -323,7 +349,7 @@ class VisualizationRequest(BaseModel):
     plugin_settings: dict | None = None
 
 
-@app.post("/get_row_visualization", response_class=Base64JSONResponse, response_model=None)
+@app.post("/api/get_row_visualization", response_class=Base64JSONResponse, response_model=None)
 async def get_row_visualization(
     request: VisualizationRequest, ibis: IbisDBDep
 ) -> Base64JSONResponse:
@@ -358,3 +384,25 @@ async def get_row_visualization(
 
     html = row_visualizer_plugin.get_row_html(row_data, settings, config)
     return Base64JSONResponse(content={"html": html})
+
+
+@app.get("/docs", include_in_schema=False, response_model=None)
+async def redirect_docs() -> RedirectResponse:
+    return RedirectResponse(url="/api/docs")
+
+
+@app.get("/redoc", include_in_schema=False, response_model=None)
+async def redirect_redoc() -> RedirectResponse:
+    return RedirectResponse(url="/api/redoc")
+
+
+@app.get("/openapi.json", include_in_schema=False, response_model=None)
+async def redirect_openapi() -> RedirectResponse:
+    return RedirectResponse(url="/api/openapi.json")
+
+
+app.mount(
+    "/",
+    SPAStaticFiles(directory=str(FRONTEND_BUILD_DIR), html=True, check_dir=False),
+    name="frontend",
+)

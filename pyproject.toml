@@ -25,8 +25,14 @@ dependencies = [
 [project.scripts]
 dataviewer = "dataviewer.cli:main"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 include = ["dataviewer*"]
+
+[tool.setuptools.package-data]
+dataviewer = ["webui/**"]
 
 [tool.pyright]
 include = ["dataviewer"]

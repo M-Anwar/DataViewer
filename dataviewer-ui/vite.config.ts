@@ -6,6 +6,10 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    outDir: '../dataviewer/webui',
+    emptyOutDir: true,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -13,11 +17,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/ping': 'http://localhost:8000',
-      '/facets': 'http://localhost:8000',
-      '/search': 'http://localhost:8000',
-      '/select': 'http://localhost:8000',
-      '/get_row_visualization': 'http://localhost:8000',
+      '/api': 'http://localhost:8000',
     },
   },
 })

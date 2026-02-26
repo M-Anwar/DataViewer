@@ -94,7 +94,7 @@ export type ApiConfig = {
   fetchFn?: typeof fetch
 }
 
-const DEFAULT_BASE_URL = ""
+const DEFAULT_BASE_URL = "/api"
 
 const parseErrorMessage = async (response: Response): Promise<string> => {
   const contentType = response.headers.get("content-type") ?? ""
