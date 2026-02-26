@@ -25,6 +25,9 @@ from dataviewer.db import (
     close_connections,
     initialize_connections,
 )
+from dataviewer.row_visualizer_plugin import RowVisualizerPlugin, load_plugin
+
+row_visualizer_plugin: RowVisualizerPlugin[BaseModel] | None = None
 
 
 @asynccontextmanager
@@ -38,6 +41,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await initialize_connections(config.cache_path, config.table_hash)
     elapsed = time.perf_counter() - start
     print(f"Database connections initialized in {elapsed:.3f}s")
+
+    if config.plugin_path:
+        print(f"Loading plugin from {config.plugin_path}...")
+        global row_visualizer_plugin
+        row_visualizer_plugin = load_plugin(config.plugin_path)
+        print(f"Plugin '{row_visualizer_plugin.__class__.__name__}' loaded successfully")
 
     yield
 
@@ -238,50 +247,61 @@ class SearchRequest(BaseModel):
 
 @app.post("/search", response_class=Base64JSONResponse, response_model=None)
 async def search(request: SearchRequest, ibis: IbisDBDep) -> Base64JSONResponse:
-    table = ibis.table(GLOBAL_TABLE)
+    try:
+        table = ibis.table(GLOBAL_TABLE)
 
-    # For a raw query, we ignore filters, sorts, and pagination and just execute the query as is
-    if not request.raw_query:
-        filter_clauses = [
-            x.get_filter(table, coerce_types=request.coerce_types) for x in request.filters or []
+        # For a raw query, we ignore filters, sorts, and pagination and just execute the query as is
+        if not request.raw_query:
+            filter_clauses = [
+                x.get_filter(table, coerce_types=request.coerce_types)
+                for x in request.filters or []
+            ]
+            sort_clauses = [
+                table[x.column].desc() if x.descending else table[x.column].asc()
+                for x in request.sorts or []
+            ]
+
+            if filter_clauses:
+                table = table.filter(*filter_clauses)
+
+            result_size = table.count()
+
+            if sort_clauses:
+                table = table.order_by(sort_clauses)
+
+            table = table.limit(request.page_size, offset=request.page * request.page_size)
+        else:
+            table = ibis.sql(request.raw_query)
+            result_size = table.count()
+
+        schema: pa.Schema = table.schema().to_pyarrow()
+        full_schema = [
+            {"name": field.name, "type": str(field.type), "nullable": field.nullable}
+            for field in schema
         ]
-        sort_clauses = [
-            table[x.column].desc() if x.descending else table[x.column].asc()
-            for x in request.sorts or []
-        ]
 
-        if filter_clauses:
-            table = table.filter(*filter_clauses)
+        start_time = time.perf_counter()
+        results = table.to_polars().to_dicts()
+        full_result_size = result_size.execute()
+        execution_time_ms = (time.perf_counter() - start_time) * 1000
 
-        result_size = table.count()
-
-        if sort_clauses:
-            table = table.order_by(sort_clauses)
-
-        table = table.limit(request.page_size, offset=request.page * request.page_size)
-    else:
-        table = ibis.sql(request.raw_query)
-        result_size = table.count()
-
-    schema: pa.Schema = table.schema().to_pyarrow()
-    full_schema = [
-        {"name": field.name, "type": str(field.type), "nullable": field.nullable}
-        for field in schema
-    ]
-
-    start_time = time.perf_counter()
-    results = table.to_polars().to_dicts()
-    full_result_size = result_size.execute()
-    execution_time_ms = (time.perf_counter() - start_time) * 1000
-
-    return Base64JSONResponse(
-        content={
-            "data": results,
-            "schema": full_schema,
-            "total_rows": full_result_size,
-            "execution_time_ms": execution_time_ms,
-        }
-    )
+        return Base64JSONResponse(
+            content={
+                "data": results,
+                "schema": full_schema,
+                "total_rows": full_result_size,
+                "execution_time_ms": execution_time_ms,
+            }
+        )
+    except Exception as exc:
+        message = str(exc).strip()
+        error_message = (
+            f"{exc.__class__.__name__}: {message}" if message else exc.__class__.__name__
+        )
+        return Base64JSONResponse(
+            content={"error": error_message},
+            status_code=500,
+        )
 
 
 @app.get("/select", response_class=Base64JSONResponse, response_model=None)
@@ -291,8 +311,50 @@ async def select_by_id(id: str, ibis: IbisDBDep) -> Base64JSONResponse:
         return Base64JSONResponse(content={"error": "ID column not configured"}, status_code=400)
 
     table = ibis.table(GLOBAL_TABLE)
-    result = table.filter(table[config.id_column] == id).execute()
+    result = table.filter(table[config.id_column] == id).limit(1).execute()
     if result.empty:
         return Base64JSONResponse(content={"error": "Row not found"}, status_code=404)
 
     return Base64JSONResponse(content=result.iloc[0].to_dict())
+
+
+class VisualizationRequest(BaseModel):
+    id: str
+    plugin_settings: dict | None = None
+
+
+@app.post("/get_row_visualization", response_class=Base64JSONResponse, response_model=None)
+async def get_row_visualization(
+    request: VisualizationRequest, ibis: IbisDBDep
+) -> Base64JSONResponse:
+    global row_visualizer_plugin
+
+    if row_visualizer_plugin is None:
+        return Base64JSONResponse(
+            content={"error": "No visualization plugin configured"}, status_code=400
+        )
+
+    config = get_config()
+    if not config.id_column:
+        return Base64JSONResponse(content={"error": "ID column not configured"}, status_code=400)
+
+    # Update settings based on request parameters if provided,
+    # otherwise use defaults from the plugin
+    settings = row_visualizer_plugin.plugin_settings()
+    if request.plugin_settings:
+        try:
+            settings = settings.model_copy(update=request.plugin_settings)
+        except Exception as exc:
+            return Base64JSONResponse(
+                content={"error": f"Invalid plugin settings: {exc}"}, status_code=400
+            )
+
+    table = ibis.table(GLOBAL_TABLE)
+    result = table.filter(table[config.id_column] == request.id).limit(1).execute()
+    if result.empty:
+        return Base64JSONResponse(content={"error": "Row not found"}, status_code=404)
+
+    row_data = result.iloc[0].to_dict()
+
+    html = row_visualizer_plugin.get_row_html(row_data, settings, config)
+    return Base64JSONResponse(content={"html": html})

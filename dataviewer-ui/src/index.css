@@ -114,6 +114,10 @@ body {
   display: none;
 }
 
+.split-holder.split-holder--resizing iframe {
+  pointer-events: none;
+}
+
 .default-row-panel-tree.p-tree {
   padding: 0;
 }

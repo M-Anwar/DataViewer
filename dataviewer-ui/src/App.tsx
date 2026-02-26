@@ -1,6 +1,6 @@
 import type { RowPanelOpenParams } from "@/components/RowPanels/types";
 import { type Filter } from "@/services/api";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DataViewer from "./components/DataViewer/DataViewer";
 import { Header } from "./components/Header";
 import RowDockManager, {
@@ -23,6 +23,12 @@ function App() {
     "Quick Filters",
   );
   const dataViewerSearchRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (rowPanels.length === 0) {
+      setDockMode("hidden");
+    }
+  }, [rowPanels]);
 
   const handleRegisterSearch = useCallback((searchFn: () => void) => {
     dataViewerSearchRef.current = searchFn;
@@ -59,6 +65,10 @@ function App() {
     setFilters((prev) =>
       prev.map((filter, i) => (i === idx ? updatedFilter : filter)),
     );
+  };
+
+  const onClearFilters = () => {
+    setFilters([]);
   };
 
   const splitVisible = dockMode !== "hidden";
@@ -102,9 +112,11 @@ function App() {
           sqlQuery={sqlQuery}
           searchMode={searchMode}
           setSearchMode={setSearchMode}
+          onFiltersChange={setFilters}
           onAddFilter={onAddFilter}
           onUpdateFilter={onUpdateFilter}
           onRemoveFilter={onRemoveFilter}
+          onClearFilters={onClearFilters}
           onSQLQueryChange={setSQLQuery}
           onSearch={() => dataViewerSearchRef.current?.()}
           dockMode={dockMode}

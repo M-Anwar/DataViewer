@@ -82,12 +82,47 @@ export type SearchResponse = {
 
 export type SelectResponse = Record<string, unknown> | { error: string }
 
+export type VisualizationRequest = {
+  id: string
+  plugin_settings?: Record<string, unknown> | null
+}
+
+export type VisualizationResponse = { html: string } | { error: string }
+
 export type ApiConfig = {
   baseUrl?: string
   fetchFn?: typeof fetch
 }
 
 const DEFAULT_BASE_URL = ""
+
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  const contentType = response.headers.get("content-type") ?? ""
+
+  if (contentType.includes("application/json")) {
+    try {
+      const payload = (await response.json()) as Record<string, unknown>
+      const candidates = [payload.error, payload.detail, payload.message]
+      const message = candidates.find(
+        (value): value is string => typeof value === "string" && value.trim().length > 0,
+      )
+
+      if (message) {
+        return message.trim()
+      }
+
+      return JSON.stringify(payload)
+    } catch {
+      return ""
+    }
+  }
+
+  try {
+    return (await response.text()).trim()
+  } catch {
+    return ""
+  }
+}
 
 const request = async <T>(
   path: string,
@@ -106,9 +141,9 @@ const request = async <T>(
   })
 
   if (!response.ok) {
-    const text = await response.text()
+    const text = await parseErrorMessage(response)
     throw new Error(
-      `Request failed: ${response.status} ${response.statusText} ${text}`.trim(),
+      `Request failed: ${response.status} ${response.statusText}${text ? ` - ${text}` : ""}`,
     )
   }
 
@@ -142,5 +177,22 @@ export const api = {
   select(id: string, config?: ApiConfig): Promise<SelectResponse> {
     const params = new URLSearchParams({ id })
     return request<SelectResponse>(`/select?${params.toString()}`, { method: "GET" }, config)
+  },
+
+  getRowVisualization(
+    body: VisualizationRequest,
+    config?: ApiConfig,
+  ): Promise<VisualizationResponse> {
+    return request<VisualizationResponse>(
+      "/get_row_visualization",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+      config,
+    )
   },
 }

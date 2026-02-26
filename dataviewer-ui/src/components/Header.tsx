@@ -1,25 +1,17 @@
-import { useApp } from "@/contexts/AppContext";
 import * as api from "@/services/api";
-import { Badge } from "primereact/badge";
 import { Button } from "primereact/button";
-import { Chip } from "primereact/chip";
 import {
   SelectButton,
   type SelectButtonChangeEvent,
 } from "primereact/selectbutton";
-import { Tooltip } from "primereact/tooltip";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Divider } from "primereact/divider";
+import { Bookmarks } from "./Bookmarks";
+import { ConfigSidebar } from "./ConfigSidebar";
 import Filters from "./DataViewer/Filters";
 
 import { InputTextarea } from "primereact/inputtextarea";
-import {
-  MultiSelect,
-  type MultiSelectChangeEvent,
-} from "primereact/multiselect";
-import { Panel } from "primereact/panel";
-import { Sidebar } from "primereact/sidebar";
 
 interface HeaderProps {
   filters: api.Filter[];
@@ -27,9 +19,11 @@ interface HeaderProps {
   searchMode: "Quick Filters" | "SQL Editor";
   dockMode?: "hidden" | "horizontal" | "vertical";
   setSearchMode?: (mode: "Quick Filters" | "SQL Editor") => void;
+  onFiltersChange?: (filters: api.Filter[]) => void;
   onAddFilter?: (filter: api.Filter) => void;
   onUpdateFilter?: (idx: number, filter: api.Filter) => void;
   onRemoveFilter?: (idx: number) => void;
+  onClearFilters?: () => void;
   onSQLQueryChange?: (sql: string) => void;
   onSearch?: () => void;
   onToggleSplitMode?: () => void;
@@ -39,46 +33,19 @@ export function Header({
   sqlQuery,
   searchMode,
   dockMode = "hidden",
+  onFiltersChange,
   onAddFilter,
   onUpdateFilter,
   onRemoveFilter,
+  onClearFilters,
   onSQLQueryChange,
   onSearch,
   onToggleSplitMode,
   setSearchMode,
 }: HeaderProps) {
-  const { pingResult, globalConfig, setHiddenColumns, setFrozenColumns } =
-    useApp();
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
-  const datasetPath = pingResult?.configuration?.dataset_path as
-    | string
-    | undefined;
-  const datasetName = pingResult?.configuration?.dataset_name as
-    | string
-    | undefined;
-  const datasetFormat = pingResult?.configuration?.dataset_format as
-    | string
-    | undefined;
-
-  const numRows = pingResult?.dataset_info.num_rows as number | 0;
-
   const searchOptions: string[] = ["Quick Filters", "SQL Editor"];
-  const hiddenColumnOptions = useMemo(
-    () =>
-      (pingResult?.dataset_info.full_schema ?? []).map((column) => ({
-        label: column.name,
-        value: column.name,
-      })),
-    [pingResult],
-  );
-
-  // Name is the concatenation of the dataset format and name separated by a |
-  const name = datasetName
-    ? datasetFormat
-      ? `${datasetFormat} | ${datasetName}`
-      : datasetName
-    : "Unknown Dataset";
 
   const splitToggleIcon =
     dockMode === "hidden"
@@ -107,6 +74,7 @@ export function Header({
           onAddFilter={onAddFilter}
           onUpdateFilter={onUpdateFilter}
           onRemoveFilter={onRemoveFilter}
+          onClearFilters={onClearFilters}
         />
       )}
 
@@ -130,6 +98,14 @@ export function Header({
           raised
           onClick={() => onSearch?.()}
         ></Button>
+        <Bookmarks
+          filters={filters}
+          sqlQuery={sqlQuery}
+          searchMode={searchMode}
+          onApplySearchMode={(mode) => setSearchMode?.(mode)}
+          onApplyQuickFilters={(nextFilters) => onFiltersChange?.(nextFilters)}
+          onApplySqlQuery={(query) => onSQLQueryChange?.(query)}
+        />
         <Button
           className="no-focus"
           icon="pi pi-cog"
@@ -147,89 +123,10 @@ export function Header({
           aria-label="Toggle split layout"
           onClick={() => onToggleSplitMode?.()}
         />
-        <Sidebar
+        <ConfigSidebar
           visible={isSidebarVisible}
-          position="right"
           onHide={() => setIsSidebarVisible(false)}
-          className="w-3xl"
-          header="Settings"
-        >
-          <div className="flex gap-4 items-center">
-            <Badge
-              value={`Num Rows: ${numRows?.toLocaleString()}`}
-              size="large"
-            />
-            <Tooltip target=".dataset-name" />
-            <div
-              className="dataset-name w-fit"
-              data-pr-tooltip={datasetPath || "Unknown Dataset Path"}
-              data-pr-position="bottom"
-            >
-              <Chip label={name} icon="pi pi-file" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 mt-4 text-xl">
-            <Panel header="Configuration" toggleable collapsed>
-              <div className="overflow-auto">
-                <pre>
-                  {JSON.stringify(pingResult?.configuration, null, 2) ||
-                    "No Configuration"}
-                </pre>
-              </div>
-            </Panel>
-            <Panel header="Schema" toggleable collapsed>
-              <div className="overflow-auto">
-                <pre>
-                  {JSON.stringify(
-                    pingResult?.dataset_info?.full_schema,
-                    null,
-                    2,
-                  ) || "No Schema"}
-                </pre>
-              </div>
-            </Panel>
-            <div className="flex flex-col gap-2 mt-4">
-              <label
-                htmlFor="hidden-columns-select"
-                className="text-lg font-medium"
-              >
-                Hidden Columns
-              </label>
-              <MultiSelect
-                inputId="hidden-columns-select"
-                options={hiddenColumnOptions}
-                value={globalConfig.hidden_columns}
-                onChange={(event: MultiSelectChangeEvent) =>
-                  setHiddenColumns(event.value as string[])
-                }
-                display="chip"
-                filter
-                placeholder="Select columns"
-                className="w-full hidden-columns-select"
-              />
-            </div>
-            <div className="flex flex-col gap-2 mt-4">
-              <label
-                htmlFor="frozen-columns-select"
-                className="text-lg font-medium"
-              >
-                Frozen Columns
-              </label>
-              <MultiSelect
-                inputId="frozen-columns-select"
-                options={hiddenColumnOptions}
-                value={globalConfig.frozen_columns}
-                onChange={(event: MultiSelectChangeEvent) =>
-                  setFrozenColumns(event.value as string[])
-                }
-                display="chip"
-                filter
-                placeholder="Select columns"
-                className="w-full hidden-columns-select"
-              />
-            </div>
-          </div>
-        </Sidebar>
+        />
       </div>
     </div>
   );

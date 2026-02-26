@@ -11,18 +11,22 @@ class ViewArgs(BaseModel):
 
     Attributes:
         dataset_path: Path to the dataset file (e.g., CSV, JSON, etc.)
-        exclude_columns: List of columns to exclude from the storing in the dataset
+        exclude_columns: List of columns to exclude from storage in the dataset
         include_columns: List of columns to include in the dataset
         hidden_columns: List of columns to hide in the UI by default
-        facet_columns: List of columns to generate pre-filter options (dropdowns) for
+        facet_columns: List of columns used to generate pre-filter options (dropdowns)
         id_column: Column to use as the unique identifier for each row
         image_columns: List of columns that contain image bytes
         embed_image_columns: List of columns that contain image URLs to embed in the UI
         embed_text_columns: List of columns that contain text to embed in the UI
         row_start: Starting row index to load from the dataset
         row_end: Ending row index to load from the dataset (exclusive)
+        limit: Maximum number of rows to load from the dataset
+        plugin_path: Path to a row visualization plugin module
         port: Port to run the UI on
-        config: A file path to a JSON config file, configuring the above options
+        cache_path: Path to the local cache directory
+        table_hash: Optional table hash used for cache/table identification
+        config: Path to a JSON config file that configures the above options
     """
 
     dataset_path: str | None = None
@@ -43,6 +47,9 @@ class ViewArgs(BaseModel):
     row_start: int | None = None
     row_end: int | None = None
     limit: int | None = None
+
+    # Visualization plugin information
+    plugin_path: str | None = None
 
     # Configuration
     port: int | None = None

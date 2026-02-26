@@ -1,7 +1,7 @@
 import * as api from "@/services/api";
 
-import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
+import { SplitButton } from "primereact/splitbutton";
 import { useRef } from "react";
 import FilterChip from "./FilterChip";
 import FilterEditor from "./FilterEditor";
@@ -11,6 +11,7 @@ interface FilterProps {
   onUpdateFilter?: (idx: number, filter: api.Filter) => void;
   onAddFilter?: (filter: api.Filter) => void;
   onRemoveFilter?: (idx: number) => void;
+  onClearFilters?: () => void;
 }
 
 export default function Filters({
@@ -18,19 +19,28 @@ export default function Filters({
   onAddFilter,
   onUpdateFilter,
   onRemoveFilter,
+  onClearFilters,
 }: FilterProps) {
   const addFilterOverlay: React.RefObject<OverlayPanel | null> = useRef(null);
 
+  const addFilterMenuItems = [
+    {
+      label: "Clear all filters",
+      icon: "pi pi-trash",
+      command: () => onClearFilters?.(),
+    },
+  ];
+
   return (
     <div className="flex flex-row grow items-center gap-2">
-      <div className="shrink-0">
-        <Button
+      <div className="shrink-0 relative">
+        <SplitButton
           className="no-focus"
           icon="pi pi-plus"
           label="Add Filter"
-          badge={filters.length > 0 ? `${filters.length}` : undefined}
           rounded
           aria-label="Filter"
+          model={addFilterMenuItems}
           onClick={(e) =>
             addFilterOverlay.current && addFilterOverlay.current.toggle(e)
           }

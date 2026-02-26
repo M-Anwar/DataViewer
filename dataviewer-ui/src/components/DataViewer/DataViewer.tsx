@@ -165,10 +165,17 @@ export default function DataViewer({
   onOpenRowPanel,
 }: DataViewerProps) {
   const { pingResult, error: appError, globalConfig } = useApp();
-  const { data, schema, total_rows, execution_time_ms, isLoading, search } =
-    useData({
-      pingResult,
-    });
+  const {
+    data,
+    error: dataError,
+    schema,
+    total_rows,
+    execution_time_ms,
+    isLoading,
+    search,
+  } = useData({
+    pingResult,
+  });
   const didInitialSearch = useRef(false);
   const [first, setFirst] = useState(0);
   const [rows, setRows] = useState(10);
@@ -429,6 +436,11 @@ export default function DataViewer({
         ref={rowContextMenuRef}
         onHide={() => setContextMenuRow(null)}
       />
+      {dataError && (
+        <div className="p-4">
+          <span className="text-red-500">Error: {dataError.message}</span>
+        </div>
+      )}
       <DataTable
         className="data-viewer-table flex-1 min-h-0"
         style={tableStyle}
