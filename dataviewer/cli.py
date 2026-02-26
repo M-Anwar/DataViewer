@@ -38,9 +38,17 @@ def generate_config(output: str) -> None:
         include_columns=["column3", "column4"],
         hidden_columns=["column5"],
         facet_columns=["column6"],
+        id_column="id",
+        image_columns=["image_bytes"],
+        embed_image_columns=["image_url"],
+        embed_text_columns=["description"],
         row_start=0,
         row_end=100,
+        limit=100,
+        plugin_path="plugins/custom_plugin.py",
         port=8000,
+        cache_path="~/.cache/dataviewer",
+        reload_plugin=False,
     )
     print("Generating example config to:", output)
     with open(output, "w") as f:

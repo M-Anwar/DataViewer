@@ -355,12 +355,24 @@ async def get_row_visualization(
 ) -> Base64JSONResponse:
     global row_visualizer_plugin
 
+    config = get_config()
+    if config.reload_plugin:
+        if not config.plugin_path:
+            return Base64JSONResponse(
+                content={"error": "No visualization plugin configured"}, status_code=400
+            )
+        try:
+            row_visualizer_plugin = load_plugin(config.plugin_path)
+        except Exception as exc:
+            return Base64JSONResponse(
+                content={"error": f"Failed to reload plugin: {exc}"}, status_code=500
+            )
+
     if row_visualizer_plugin is None:
         return Base64JSONResponse(
             content={"error": "No visualization plugin configured"}, status_code=400
         )
 
-    config = get_config()
     if not config.id_column:
         return Base64JSONResponse(content={"error": "ID column not configured"}, status_code=400)
 

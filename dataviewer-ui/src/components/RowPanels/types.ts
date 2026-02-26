@@ -9,4 +9,5 @@ export type RowPanelParams = {
   id: string;
   type: RowPanelType;
   panelId: string;
+  onReload?: () => void;
 };

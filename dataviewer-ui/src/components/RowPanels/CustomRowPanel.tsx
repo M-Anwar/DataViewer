@@ -1,7 +1,7 @@
 import type { RowPanelParams } from "@/components/RowPanels/types";
 import { api, type VisualizationResponse } from "@/services/api";
 import { type IDockviewPanelProps } from "dockview";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function CustomRowPanel({
   params,
@@ -9,6 +9,34 @@ export default function CustomRowPanel({
   const [html, setHtml] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const loadVisualization = useCallback((rowId: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    return api
+      .getRowVisualization({ id: rowId })
+      .then((response: VisualizationResponse) => {
+        if ("error" in response) {
+          setHtml("");
+          setError(response.error);
+          return;
+        }
+
+        setHtml(response.html);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to load row visualization";
+        setHtml("");
+        setError(message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     const rowId = params?.id;
@@ -19,60 +47,47 @@ export default function CustomRowPanel({
       return;
     }
 
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
+    void loadVisualization(rowId);
+  }, [loadVisualization, params?.id]);
 
-    void api
-      .getRowVisualization({ id: rowId })
-      .then((response: VisualizationResponse) => {
-        if (cancelled) {
-          return;
-        }
+  const onReload = () => {
+    const rowId = params?.id;
+    if (!rowId) {
+      setHtml("");
+      setError("Missing row id");
+      return;
+    }
 
-        if ("error" in response) {
-          setHtml("");
-          setError(response.error);
-          return;
-        }
+    void loadVisualization(rowId);
+  };
 
-        setHtml(response.html);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) {
-          return;
-        }
+  useEffect(() => {
+    if (!params) {
+      return;
+    }
 
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Failed to load row visualization";
-        setHtml("");
-        setError(message);
-      })
-      .finally(() => {
-        if (cancelled) {
-          return;
-        }
-        setIsLoading(false);
-      });
+    params.onReload = onReload;
 
     return () => {
-      cancelled = true;
+      if (params.onReload === onReload) {
+        params.onReload = undefined;
+      }
     };
-  }, [params?.id]);
+  }, [onReload, params]);
 
   return (
-    <div className="h-full w-full min-h-0 min-w-0 overflow-hidden p-3 text-sm text-gray-300">
-      {isLoading && <div>Loading row visualization...</div>}
-      {!isLoading && error && <div>{error}</div>}
-      {!isLoading && !error && (
-        <iframe
-          title={`row-visualization-${params?.id ?? "unknown"}`}
-          srcDoc={html}
-          className="h-full w-full min-h-0 min-w-0 border-0"
-        />
-      )}
+    <div className="flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden p-3 text-sm text-gray-300">
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        {isLoading && <div>Loading row visualization...</div>}
+        {!isLoading && error && <div>{error}</div>}
+        {!isLoading && !error && (
+          <iframe
+            title={`row-visualization-${params?.id ?? "unknown"}`}
+            srcDoc={html}
+            className="h-full w-full min-h-0 min-w-0 border-0"
+          />
+        )}
+      </div>
     </div>
   );
 }

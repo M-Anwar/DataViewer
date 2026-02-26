@@ -1,4 +1,5 @@
 import CustomRowPanel from "@/components/RowPanels/CustomRowPanel";
+import CustomRowTab from "@/components/RowPanels/CustomRowTab";
 import DefaultRowPanel from "@/components/RowPanels/DefaultRowPanel";
 import type {
   RowPanelParams,
@@ -43,6 +44,10 @@ const rowPanelComponents = {
   custom: CustomRowPanel,
 };
 
+const rowTabComponents = {
+  custom: CustomRowTab,
+};
+
 function syncPanels(api: DockviewApi, panels: RowPanelParams[]) {
   const expectedIds = new Set(panels.map((panel) => panel.panelId));
   const existingById = new Map(api.panels.map((panel) => [panel.id, panel]));
@@ -69,6 +74,7 @@ function syncPanels(api: DockviewApi, panels: RowPanelParams[]) {
       id: panelData.panelId,
       title: panelData.id,
       component: panelData.type,
+      tabComponent: panelData.type === "custom" ? "custom" : undefined,
       params: panelData,
       inactive: api.panels.length > 0,
     });
@@ -135,6 +141,7 @@ export default function RowDockManager({
       <DockviewReact
         className="h-full w-full min-h-0 min-w-0"
         components={rowPanelComponents}
+        tabComponents={rowTabComponents}
         onReady={onReady}
       />
     </div>

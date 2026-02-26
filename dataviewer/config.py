@@ -27,6 +27,7 @@ class ViewArgs(BaseModel):
         cache_path: Path to the local cache directory
         table_hash: Optional table hash used for cache/table identification
         config: Path to a JSON config file that configures the above options
+        reload_plugin: Whether to reload the plugin on each request (for development)
     """
 
     dataset_path: str | None = None
@@ -56,6 +57,7 @@ class ViewArgs(BaseModel):
     cache_path: str | None = None
     table_hash: str | None = None
     config: str | None = None
+    reload_plugin: bool = False
 
     @model_validator(mode="after")
     def _set_default_cache_path(self) -> "ViewArgs":

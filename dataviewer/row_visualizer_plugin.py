@@ -1,5 +1,6 @@
 import importlib
 import importlib.util
+import sys
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
@@ -47,7 +48,11 @@ def load_plugin(path_or_module: str) -> RowVisualizerPlugin[BaseModel]:
             module_path, class_name = path_or_module.rsplit(".", 1)
         except ValueError as exc:
             raise ValueError("Plugin must be in format 'package.module.ClassName'") from exc
-        module = importlib.import_module(module_path)
+        importlib.invalidate_caches()
+        if module_path in sys.modules:
+            module = importlib.reload(sys.modules[module_path])
+        else:
+            module = importlib.import_module(module_path)
 
     plugin_class = getattr(module, class_name, None)
     if plugin_class is None:

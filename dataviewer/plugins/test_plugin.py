@@ -14,4 +14,4 @@ class TestPlugin(RowVisualizerPlugin[TestPluginSettings]):
     def get_row_html(
         self, row_data: dict, settings: TestPluginSettings, view_args: ViewArgs
     ) -> str:
-        return f"<div>{settings.greeting} - {view_args.dataset_path} </div>"
+        return f"Hahaha lmao<div>{settings.greeting} - {view_args.dataset_path} </div>"
