@@ -2,13 +2,16 @@ import importlib
 import importlib.util
 import sys
 from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
 from dataviewer.config import ViewArgs
 
+T = TypeVar("T", bound=BaseModel)
 
-class RowVisualizerPlugin[T: BaseModel](ABC):
+
+class RowVisualizerPlugin(ABC, Generic[T]):
     @abstractmethod
     def plugin_settings(self) -> T:
         """

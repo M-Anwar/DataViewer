@@ -205,7 +205,7 @@ class Operator(StrEnum):
     BETWEEN = "between"
 
 
-type CoercibleValue = str | int | float | bool | None | list[str | int | float | bool | None]
+CoercibleValue = str | int | float | bool | None | list[str | int | float | bool | None]
 
 
 class Filter(BaseModel):
