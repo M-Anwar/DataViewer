@@ -79,15 +79,20 @@ def _get_columns(
         invalid_include = set(include_cols) - all_column_set
         if invalid_include:
             raise ValueError(f"Included columns not found in dataset: {invalid_include}")
-        all_column_set = set(include_cols)
+
+    selected_columns = list(all_column)
+    if include_cols is not None:
+        include_set = set(include_cols)
+        selected_columns = [col for col in selected_columns if col in include_set]
 
     if exclude_cols is not None:
-        invalid_exclude = set(exclude_cols) - all_column_set
+        invalid_exclude = set(exclude_cols) - set(selected_columns)
         if invalid_exclude:
             raise ValueError(f"Excluded columns not found in dataset: {invalid_exclude}")
-        all_column_set -= set(exclude_cols)
+        exclude_set = set(exclude_cols)
+        selected_columns = [col for col in selected_columns if col not in exclude_set]
 
-    return list(all_column_set)
+    return selected_columns
 
 
 def _stream_dataset(

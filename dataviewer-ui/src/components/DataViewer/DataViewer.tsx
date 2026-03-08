@@ -43,6 +43,7 @@ type TableRow = {
 
 type DataViewerTableStyle = CSSProperties & {
   "--data-row-font-size": string;
+  "--data-column-max-width": string;
 };
 
 type ViewerConfiguration = {
@@ -420,6 +421,7 @@ export default function DataViewer({
   const tableStyle = useMemo<DataViewerTableStyle>(
     () => ({
       "--data-row-font-size": `${rowFontSize}rem`,
+      "--data-column-max-width": "32rem",
     }),
     [rowFontSize],
   );

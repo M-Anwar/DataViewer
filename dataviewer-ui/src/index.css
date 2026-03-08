@@ -40,6 +40,11 @@ body {
   font-size: var(--data-row-font-size, 1.05rem);
 }
 
+.data-viewer-table .p-datatable-thead > tr > th,
+.data-viewer-table .p-datatable-tbody > tr > td {
+  max-width: var(--data-column-max-width, 28rem);
+}
+
 .data-viewer-table .p-datatable-thead > tr > th {
   position: sticky;
   top: 0;

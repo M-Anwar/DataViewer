@@ -61,7 +61,7 @@ def test_get_columns_no_filters_returns_all() -> None:
 
     result = _get_columns(all_columns, include_cols=None, exclude_cols=None)
 
-    assert set(result) == set(all_columns)
+    assert result == all_columns
 
 
 def test_get_columns_include_only_limits_columns() -> None:
@@ -70,7 +70,7 @@ def test_get_columns_include_only_limits_columns() -> None:
 
     result = _get_columns(all_columns, include_cols=include_cols, exclude_cols=None)
 
-    assert set(result) == set(include_cols)
+    assert result == include_cols
 
 
 def test_get_columns_exclude_only_removes_columns() -> None:
@@ -79,7 +79,7 @@ def test_get_columns_exclude_only_removes_columns() -> None:
 
     result = _get_columns(all_columns, include_cols=None, exclude_cols=exclude_cols)
 
-    assert set(result) == {"id", "name"}
+    assert result == ["id", "name"]
 
 
 def test_get_columns_include_then_exclude() -> None:
@@ -89,7 +89,16 @@ def test_get_columns_include_then_exclude() -> None:
 
     result = _get_columns(all_columns, include_cols=include_cols, exclude_cols=exclude_cols)
 
-    assert set(result) == {"id", "name"}
+    assert result == ["id", "name"]
+
+
+def test_get_columns_include_order_follows_all_columns() -> None:
+    all_columns = ["id", "name", "age", "city"]
+    include_cols = ["city", "id"]
+
+    result = _get_columns(all_columns, include_cols=include_cols, exclude_cols=None)
+
+    assert result == ["id", "city"]
 
 
 def test_get_columns_invalid_include_raises() -> None:
