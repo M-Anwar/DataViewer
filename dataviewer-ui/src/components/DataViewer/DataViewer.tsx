@@ -258,10 +258,20 @@ export default function DataViewer({
       page_size: rows,
       filters: !isSqlMode && filters.length > 0 ? filters : undefined,
       raw_query: isSqlMode && hasSqlQuery ? sqlQuery : null,
+      hidden_columns: globalConfig.hidden_columns,
     };
 
     search(request);
-  }, [filters, pingResult, first, rows, search, searchMode, sqlQuery]);
+  }, [
+    filters,
+    pingResult,
+    first,
+    rows,
+    search,
+    searchMode,
+    sqlQuery,
+    globalConfig.hidden_columns,
+  ]);
 
   useEffect(() => {
     onRegisterSearch?.(handleSearch);

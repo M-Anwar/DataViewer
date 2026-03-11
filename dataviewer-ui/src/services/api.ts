@@ -71,6 +71,7 @@ export type SearchRequest = {
   sorts?: Sort[]
   raw_query?: string | null
   coerce_types?: boolean
+  hidden_columns?: string[] | null
 }
 
 export type SearchResponse = {

@@ -269,6 +269,7 @@ class SearchRequest(BaseModel):
     sorts: list[Sort] | None = None
     raw_query: str | None = None
     coerce_types: bool = False
+    hidden_columns: list[str] | None = None
 
 
 @app.post("/api/search", response_class=Base64JSONResponse, response_model=None)
@@ -295,7 +296,11 @@ async def search(request: SearchRequest, ibis: IbisDBDep) -> Base64JSONResponse:
             if sort_clauses:
                 table = table.order_by(sort_clauses)
 
+            if request.hidden_columns:
+                table = table.drop(*request.hidden_columns)
+
             table = table.limit(request.page_size, offset=request.page * request.page_size)
+
         else:
             table = ibis.sql(request.raw_query)
             result_size = table.count()
