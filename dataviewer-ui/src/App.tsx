@@ -8,6 +8,7 @@ import RowDockManager, {
 } from "./components/RowDockManager";
 import SplitHolder from "./components/SplitHolder";
 import { AppProvider } from "./contexts/AppContext";
+import { PluginProvider } from "./contexts/PluginContext";
 
 type DockMode = "hidden" | "horizontal" | "vertical";
 
@@ -129,40 +130,42 @@ function App() {
 
   return (
     <AppProvider>
-      <div className="fixed inset-0 flex min-h-0 min-w-0 flex-col">
-        <Header
-          filters={filters}
-          sorts={sorts}
-          sqlQuery={sqlQuery}
-          searchMode={searchMode}
-          setSearchMode={setSearchMode}
-          onFiltersChange={setFilters}
-          onAddFilter={onAddFilter}
-          onUpdateFilter={onUpdateFilter}
-          onRemoveFilter={onRemoveFilter}
-          onClearFilters={onClearFilters}
-          onSQLQueryChange={setSQLQuery}
-          onAddSort={onAddSort}
-          onRemoveSort={onRemoveSort}
-          onClearSorts={onClearSorts}
-          onSearch={() => dataViewerSearchRef.current?.()}
-          dockMode={dockMode}
-          onToggleSplitMode={onToggleSplitMode}
-        />
-        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
-          <SplitHolder
-            splitDirection={splitDirection}
-            splitVisible={splitVisible}
-            mainView={mainView}
-            auxiliaryView={
-              <RowDockManager
-                panels={rowPanels}
-                onPanelsChange={setRowPanels}
-              />
-            }
+      <PluginProvider>
+        <div className="fixed inset-0 flex min-h-0 min-w-0 flex-col">
+          <Header
+            filters={filters}
+            sorts={sorts}
+            sqlQuery={sqlQuery}
+            searchMode={searchMode}
+            setSearchMode={setSearchMode}
+            onFiltersChange={setFilters}
+            onAddFilter={onAddFilter}
+            onUpdateFilter={onUpdateFilter}
+            onRemoveFilter={onRemoveFilter}
+            onClearFilters={onClearFilters}
+            onSQLQueryChange={setSQLQuery}
+            onAddSort={onAddSort}
+            onRemoveSort={onRemoveSort}
+            onClearSorts={onClearSorts}
+            onSearch={() => dataViewerSearchRef.current?.()}
+            dockMode={dockMode}
+            onToggleSplitMode={onToggleSplitMode}
           />
+          <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
+            <SplitHolder
+              splitDirection={splitDirection}
+              splitVisible={splitVisible}
+              mainView={mainView}
+              auxiliaryView={
+                <RowDockManager
+                  panels={rowPanels}
+                  onPanelsChange={setRowPanels}
+                />
+              }
+            />
+          </div>
         </div>
-      </div>
+      </PluginProvider>
     </AppProvider>
   );
 }

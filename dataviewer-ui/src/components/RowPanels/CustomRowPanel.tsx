@@ -1,21 +1,31 @@
 import type { RowPanelParams } from "@/components/RowPanels/types";
+import { usePlugin } from "@/contexts/PluginContext";
 import { api, type VisualizationResponse } from "@/services/api";
 import { type IDockviewPanelProps } from "dockview";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function CustomRowPanel({
   params,
 }: IDockviewPanelProps<RowPanelParams>) {
+  const { pluginSettings } = usePlugin();
   const [html, setHtml] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pluginSettingsRef = useRef(pluginSettings);
+
+  useEffect(() => {
+    pluginSettingsRef.current = pluginSettings;
+  }, [pluginSettings]);
 
   const loadVisualization = useCallback((rowId: string) => {
     setIsLoading(true);
     setError(null);
 
     return api
-      .getRowVisualization({ id: rowId })
+      .getRowVisualization({
+        id: rowId,
+        plugin_settings: pluginSettingsRef.current,
+      })
       .then((response: VisualizationResponse) => {
         if ("error" in response) {
           setHtml("");

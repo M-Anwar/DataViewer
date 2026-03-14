@@ -90,6 +90,23 @@ export type VisualizationRequest = {
 
 export type VisualizationResponse = { html: string } | { error: string }
 
+export type PluginSettingValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
+
+export type PluginSetting = {
+  name: string
+  type: string
+  value: PluginSettingValue
+}
+
+export type PluginSettingsResponse = {
+  plugin_name: string
+  settings: PluginSetting[]
+}
+
 export type ApiConfig = {
   baseUrl?: string
   fetchFn?: typeof fetch
@@ -185,7 +202,7 @@ export const api = {
     config?: ApiConfig,
   ): Promise<VisualizationResponse> {
     return request<VisualizationResponse>(
-      "/get_row_visualization",
+      "/plugins/get_row_visualization",
       {
         method: "POST",
         headers: {
@@ -196,4 +213,18 @@ export const api = {
       config,
     )
   },
+
+  getPluginSettingsSchema(
+    config?: ApiConfig,
+  ): Promise<PluginSettingsResponse> {
+    return request<PluginSettingsResponse>(
+      "/plugins/get_settings",
+      {
+        method: "GET",
+      },
+      config,
+    )
+  }
 }
+
+

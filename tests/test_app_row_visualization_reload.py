@@ -7,7 +7,7 @@ import ibis
 import pandas as pd
 from pydantic import BaseModel
 
-import dataviewer.app as app_module
+import dataviewer.plugins.routes as plugin_routes_module
 from dataviewer.config import ViewArgs
 from dataviewer.row_visualizer_plugin import RowVisualizerPlugin
 
@@ -28,7 +28,7 @@ def test_get_row_visualization_reload_plugin(monkeypatch) -> None:  # type: igno
     reloaded_plugin = _ReloadedPlugin()
 
     monkeypatch.setattr(
-        app_module,
+        plugin_routes_module,
         "get_config",
         lambda: SimpleNamespace(
             id_column="id",
@@ -38,19 +38,19 @@ def test_get_row_visualization_reload_plugin(monkeypatch) -> None:  # type: igno
     )
 
     load_plugin_mock = MagicMock(return_value=reloaded_plugin)
-    monkeypatch.setattr(app_module, "load_plugin", load_plugin_mock)
-    app_module.row_visualizer_plugin = None
+    monkeypatch.setattr(plugin_routes_module, "load_plugin", load_plugin_mock)
+    plugin_routes_module.row_visualizer_plugin = None
 
     ibis_backend = ibis.duckdb.connect(database=":memory:")
     ibis_backend.create_table(
-        app_module.GLOBAL_TABLE,
+        plugin_routes_module.GLOBAL_TABLE,
         pd.DataFrame([{"id": "row-1"}]),
         overwrite=True,
     )
 
     response = asyncio.run(
-        app_module.get_row_visualization(
-            app_module.VisualizationRequest(id="row-1"),
+        plugin_routes_module.get_row_visualization(
+            plugin_routes_module.VisualizationRequest(id="row-1"),
             ibis_backend,
         )
     )
@@ -60,4 +60,4 @@ def test_get_row_visualization_reload_plugin(monkeypatch) -> None:  # type: igno
     assert response.status_code == 200
     assert body["html"] == "<div>row-1</div>"
     load_plugin_mock.assert_called_once_with("test.module.Plugin")
-    assert app_module.row_visualizer_plugin is reloaded_plugin
+    assert plugin_routes_module.row_visualizer_plugin is reloaded_plugin
