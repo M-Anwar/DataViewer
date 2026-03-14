@@ -3,6 +3,7 @@ import type {
   RowPanelType,
 } from "@/components/RowPanels/types";
 import { useApp } from "@/contexts/AppContext";
+import { usePlugin } from "@/contexts/PluginContext";
 import { useData } from "@/hooks/useData";
 import * as api from "@/services/api";
 import { Button } from "primereact/button";
@@ -168,6 +169,7 @@ export default function DataViewer({
   onOpenRowPanel,
 }: DataViewerProps) {
   const { pingResult, error: appError, globalConfig } = useApp();
+  const { pluginSettingsSchema } = usePlugin();
   const {
     data,
     error: dataError,
@@ -233,6 +235,15 @@ export default function DataViewer({
     [onOpenRowPanel, resolveContextMenuRowId],
   );
 
+  const customViewerLabel = useMemo(() => {
+    const pluginName = pluginSettingsSchema?.plugin_name?.trim();
+    if (!pluginName) {
+      return "Open Custom Row Viewer";
+    }
+
+    return `Open ${pluginName} Viewer`;
+  }, [pluginSettingsSchema?.plugin_name]);
+
   const rowContextMenuItems = useMemo<MenuItem[]>(
     () => [
       {
@@ -240,11 +251,11 @@ export default function DataViewer({
         command: () => handleOpenRowViewer("default"),
       },
       {
-        label: "Open Custom Row Viewer",
+        label: customViewerLabel,
         command: () => handleOpenRowViewer("custom"),
       },
     ],
-    [handleOpenRowViewer],
+    [customViewerLabel, handleOpenRowViewer],
   );
 
   const handleSearch = useCallback(() => {

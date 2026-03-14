@@ -1,4 +1,5 @@
 import { useApp } from "@/contexts/AppContext";
+import PluginSettings from "@/components/PluginSettings";
 import { Badge } from "primereact/badge";
 import { Chip } from "primereact/chip";
 import {
@@ -121,6 +122,9 @@ export function ConfigSidebar({ visible, onHide }: ConfigSidebarProps) {
             placeholder="Select columns"
             className="w-full hidden-columns-select"
           />
+        </div>
+        <div className="mt-4">
+          <PluginSettings />
         </div>
       </div>
     </Sidebar>

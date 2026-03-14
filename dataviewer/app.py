@@ -1,11 +1,7 @@
-import base64
-import json
 import math
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import date, datetime
-from decimal import Decimal
 from enum import StrEnum
 from pathlib import Path
 
@@ -13,7 +9,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import pyarrow as pa
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from ibis.expr.types.relations import Table
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -29,9 +25,9 @@ from dataviewer.db import (
     close_connections,
     initialize_connections,
 )
-from dataviewer.row_visualizer_plugin import RowVisualizerPlugin, load_plugin
-
-row_visualizer_plugin: RowVisualizerPlugin[BaseModel] | None = None
+from dataviewer.plugins.routes import load_row_visualizer_plugin
+from dataviewer.plugins.routes import router as plugin_router
+from dataviewer.response_types import Base64JSONResponse
 
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "webui"
 FRONTEND_INDEX_FILE = FRONTEND_BUILD_DIR / "index.html"
@@ -63,44 +59,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     print(f"Database connections initialized in {elapsed:.3f}s")
 
     if config.plugin_path:
-        print(f"Loading plugin from {config.plugin_path}...")
-        global row_visualizer_plugin
-        row_visualizer_plugin = load_plugin(config.plugin_path)
-        print(f"Plugin '{row_visualizer_plugin.__class__.__name__}' loaded successfully")
+        load_row_visualizer_plugin()
 
     yield
 
     print("Closing database connections...")
     await close_connections()
-
-
-class Base64JSONResponse(JSONResponse):
-    def render(self, content: object) -> bytes:
-        def sanitize(value: object) -> object:
-            if isinstance(value, float) and not math.isfinite(value):
-                return None
-            if isinstance(value, dict):
-                return {key: sanitize(val) for key, val in value.items()}
-            if isinstance(value, (list, tuple, set)):
-                return [sanitize(item) for item in value]
-            return value
-
-        def default(obj: object) -> object:
-            if isinstance(obj, (bytes, bytearray, memoryview)):
-                return base64.b64encode(bytes(obj)).decode("utf-8")
-            if isinstance(obj, (datetime, date)):
-                return obj.isoformat()
-            if isinstance(obj, Decimal):
-                return str(obj)
-            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
-
-        return json.dumps(
-            sanitize(content),
-            ensure_ascii=False,
-            allow_nan=False,
-            separators=(",", ":"),
-            default=default,
-        ).encode("utf-8")
 
 
 app = FastAPI(
@@ -110,6 +74,7 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
 )
+app.include_router(plugin_router)
 
 
 @app.get("/api/ping", response_class=Base64JSONResponse, response_model=None)
@@ -347,60 +312,6 @@ async def select_by_id(id: str, ibis: IbisDBDep) -> Base64JSONResponse:
         return Base64JSONResponse(content={"error": "Row not found"}, status_code=404)
 
     return Base64JSONResponse(content=result.iloc[0].to_dict())
-
-
-class VisualizationRequest(BaseModel):
-    id: str
-    plugin_settings: dict | None = None
-
-
-@app.post("/api/get_row_visualization", response_class=Base64JSONResponse, response_model=None)
-async def get_row_visualization(
-    request: VisualizationRequest, ibis: IbisDBDep
-) -> Base64JSONResponse:
-    global row_visualizer_plugin
-
-    config = get_config()
-    if config.reload_plugin:
-        if not config.plugin_path:
-            return Base64JSONResponse(
-                content={"error": "No visualization plugin configured"}, status_code=400
-            )
-        try:
-            row_visualizer_plugin = load_plugin(config.plugin_path)
-        except Exception as exc:
-            return Base64JSONResponse(
-                content={"error": f"Failed to reload plugin: {exc}"}, status_code=500
-            )
-
-    if row_visualizer_plugin is None:
-        return Base64JSONResponse(
-            content={"error": "No visualization plugin configured"}, status_code=400
-        )
-
-    if not config.id_column:
-        return Base64JSONResponse(content={"error": "ID column not configured"}, status_code=400)
-
-    # Update settings based on request parameters if provided,
-    # otherwise use defaults from the plugin
-    settings = row_visualizer_plugin.plugin_settings()
-    if request.plugin_settings:
-        try:
-            settings = settings.model_copy(update=request.plugin_settings)
-        except Exception as exc:
-            return Base64JSONResponse(
-                content={"error": f"Invalid plugin settings: {exc}"}, status_code=400
-            )
-
-    table = ibis.table(GLOBAL_TABLE)
-    result = table.filter(table[config.id_column] == request.id).limit(1).execute()
-    if result.empty:
-        return Base64JSONResponse(content={"error": "Row not found"}, status_code=404)
-
-    row_data = result.iloc[0].to_dict()
-
-    html = row_visualizer_plugin.get_row_html(row_data, settings, config)
-    return Base64JSONResponse(content={"html": html})
 
 
 @app.get("/docs", include_in_schema=False, response_model=None)
