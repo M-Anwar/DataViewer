@@ -15,6 +15,7 @@ import { InputTextarea } from "primereact/inputtextarea";
 
 interface HeaderProps {
   filters: api.Filter[];
+  sorts: api.Sort[];
   sqlQuery?: string;
   searchMode: "Quick Filters" | "SQL Editor";
   dockMode?: "hidden" | "horizontal" | "vertical";
@@ -24,12 +25,16 @@ interface HeaderProps {
   onUpdateFilter?: (idx: number, filter: api.Filter) => void;
   onRemoveFilter?: (idx: number) => void;
   onClearFilters?: () => void;
+  onAddSort?: (sort: api.Sort) => void;
+  onRemoveSort?: (idx: number) => void;
+  onClearSorts?: () => void;
   onSQLQueryChange?: (sql: string) => void;
   onSearch?: () => void;
   onToggleSplitMode?: () => void;
 }
 export function Header({
   filters,
+  sorts,
   sqlQuery,
   searchMode,
   dockMode = "hidden",
@@ -38,6 +43,9 @@ export function Header({
   onUpdateFilter,
   onRemoveFilter,
   onClearFilters,
+  onAddSort,
+  onRemoveSort,
+  onClearSorts,
   onSQLQueryChange,
   onSearch,
   onToggleSplitMode,
@@ -71,10 +79,14 @@ export function Header({
       {searchMode === "Quick Filters" && (
         <Filters
           filters={filters}
+          sorts={sorts}
           onAddFilter={onAddFilter}
           onUpdateFilter={onUpdateFilter}
           onRemoveFilter={onRemoveFilter}
           onClearFilters={onClearFilters}
+          onAddSort={onAddSort}
+          onRemoveSort={onRemoveSort}
+          onClearSorts={onClearSorts}
         />
       )}
 
