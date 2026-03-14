@@ -1,17 +1,24 @@
 import * as api from "@/services/api";
 
+import { Badge } from "primereact/badge";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { SplitButton } from "primereact/splitbutton";
 import { useRef } from "react";
 import FilterChip from "./FilterChip";
 import FilterEditor from "./FilterEditor";
+import { Button } from "primereact/button";
+import SortEditor from "./SortEditor";
 
 interface FilterProps {
   filters: api.Filter[];
+  sorts: api.Sort[];
   onUpdateFilter?: (idx: number, filter: api.Filter) => void;
   onAddFilter?: (filter: api.Filter) => void;
   onRemoveFilter?: (idx: number) => void;
   onClearFilters?: () => void;
+  onAddSort?: (sort: api.Sort) => void;
+  onRemoveSort?: (idx: number) => void;
+  onClearSorts?: () => void;
 }
 
 export default function Filters({
@@ -20,8 +27,13 @@ export default function Filters({
   onUpdateFilter,
   onRemoveFilter,
   onClearFilters,
+  sorts,
+  onAddSort,
+  onRemoveSort,
+  onClearSorts,
 }: FilterProps) {
   const addFilterOverlay: React.RefObject<OverlayPanel | null> = useRef(null);
+  const addSortOverlay: React.RefObject<OverlayPanel | null> = useRef(null);
 
   const addFilterMenuItems = [
     {
@@ -72,6 +84,35 @@ export default function Filters({
             editable
           />
         ))}
+      </div>
+      <div>
+        <div className="relative">
+          {sorts.length > 0 && (
+            <Badge
+              value={sorts.length.toString()}
+              className="absolute -top-1 -right-1 z-10"
+            />
+          )}
+          <Button
+            icon="pi pi-sort-amount-down-alt"
+            iconPos="right"
+            className="text-xl"
+            onClick={(e) => {
+              addSortOverlay.current && addSortOverlay.current.toggle(e);
+            }}
+          />
+        </div>
+        <OverlayPanel ref={addSortOverlay}>
+          <SortEditor
+            sorts={sorts}
+            onAddSort={(sort) => {
+              onAddSort?.(sort);
+              addSortOverlay.current?.hide();
+            }}
+            onRemoveSort={onRemoveSort}
+            onClearSorts={onClearSorts}
+          />
+        </OverlayPanel>
       </div>
     </div>
   );

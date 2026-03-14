@@ -1,5 +1,5 @@
 import type { RowPanelOpenParams } from "@/components/RowPanels/types";
-import { type Filter } from "@/services/api";
+import { type Filter, type Sort } from "@/services/api";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DataViewer from "./components/DataViewer/DataViewer";
 import { Header } from "./components/Header";
@@ -16,6 +16,7 @@ function App() {
   const [rowPanels, setRowPanels] = useState<RowPanelParams[]>([]);
 
   const [filters, setFilters] = useState<Filter[]>([]);
+  const [sorts, setSorts] = useState<Sort[]>([]);
   const [sqlQuery, setSQLQuery] = useState<string>(
     "SELECT * FROM dataset LIMIT 10 OFFSET 0;",
   );
@@ -53,6 +54,7 @@ function App() {
     });
   }, []);
 
+  // Filters
   const onAddFilter = (filter: Filter) => {
     setFilters((prev) => [...prev, filter]);
   };
@@ -69,6 +71,19 @@ function App() {
 
   const onClearFilters = () => {
     setFilters([]);
+  };
+
+  // Sorts
+  const onAddSort = (sort: Sort) => {
+    setSorts((prev) => [...prev, sort]);
+  };
+
+  const onRemoveSort = (idx: number) => {
+    setSorts((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const onClearSorts = () => {
+    setSorts([]);
   };
 
   const splitVisible = dockMode !== "hidden";
@@ -94,6 +109,7 @@ function App() {
       <div className="h-full w-full min-h-0 min-w-0 flex flex-col overflow-hidden">
         <DataViewer
           filters={filters}
+          sorts={sorts}
           sqlQuery={sqlQuery}
           searchMode={searchMode}
           onRegisterSearch={handleRegisterSearch}
@@ -101,7 +117,14 @@ function App() {
         />
       </div>
     ),
-    [filters, handleOpenRowPanel, handleRegisterSearch, searchMode, sqlQuery],
+    [
+      filters,
+      sorts,
+      handleOpenRowPanel,
+      handleRegisterSearch,
+      searchMode,
+      sqlQuery,
+    ],
   );
 
   return (
@@ -109,6 +132,7 @@ function App() {
       <div className="fixed inset-0 flex min-h-0 min-w-0 flex-col">
         <Header
           filters={filters}
+          sorts={sorts}
           sqlQuery={sqlQuery}
           searchMode={searchMode}
           setSearchMode={setSearchMode}
@@ -118,6 +142,9 @@ function App() {
           onRemoveFilter={onRemoveFilter}
           onClearFilters={onClearFilters}
           onSQLQueryChange={setSQLQuery}
+          onAddSort={onAddSort}
+          onRemoveSort={onRemoveSort}
+          onClearSorts={onClearSorts}
           onSearch={() => dataViewerSearchRef.current?.()}
           dockMode={dockMode}
           onToggleSplitMode={onToggleSplitMode}

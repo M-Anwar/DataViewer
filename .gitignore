@@ -20,3 +20,4 @@ wheels/
 # Testing configurations
 example_*.json
 cache_path/
+notebooks/

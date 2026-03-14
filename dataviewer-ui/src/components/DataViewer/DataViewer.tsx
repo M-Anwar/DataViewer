@@ -31,6 +31,7 @@ import { ImageBinaryCell } from "./ImageBinaryCell";
 
 interface DataViewerProps {
   filters: api.Filter[];
+  sorts: api.Sort[];
   sqlQuery?: string;
   searchMode: "Quick Filters" | "SQL Editor";
   onRegisterSearch?: (searchFn: () => void) => void;
@@ -160,6 +161,7 @@ function formatCellValue(
 
 export default function DataViewer({
   filters,
+  sorts,
   sqlQuery,
   searchMode,
   onRegisterSearch,
@@ -257,6 +259,7 @@ export default function DataViewer({
       page: Math.floor(first / rows),
       page_size: rows,
       filters: !isSqlMode && filters.length > 0 ? filters : undefined,
+      sorts: !isSqlMode && sorts.length > 0 ? sorts : undefined,
       raw_query: isSqlMode && hasSqlQuery ? sqlQuery : null,
       hidden_columns: globalConfig.hidden_columns,
     };
@@ -264,6 +267,7 @@ export default function DataViewer({
     search(request);
   }, [
     filters,
+    sorts,
     pingResult,
     first,
     rows,
