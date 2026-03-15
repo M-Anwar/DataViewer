@@ -4,6 +4,7 @@ import sys
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from dataviewer.config import ViewArgs
@@ -26,6 +27,20 @@ class RowVisualizerPlugin(ABC, Generic[T]):
         Given a dictionary of row data, return an HTML string to visualize that row.
         """
         pass
+
+    def get_name(self) -> str:
+        """
+        Return a human-readable name for this plugin. By default, it uses the class name.
+        """
+        return self.__class__.__name__
+
+    def register_routes(self, router: APIRouter) -> None:
+        """
+        Register plugin-specific routes on the provided router.
+
+        Base implementation is a no-op.
+        """
+        return
 
 
 def load_plugin(path_or_module: str) -> RowVisualizerPlugin[BaseModel]:

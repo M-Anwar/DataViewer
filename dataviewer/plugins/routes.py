@@ -25,7 +25,9 @@ def load_row_visualizer_plugin() -> RowVisualizerPlugin[BaseModel] | None:
 
     print(f"Loading plugin from {config.plugin_path}...")
     row_visualizer_plugin = load_plugin(config.plugin_path)
+    row_visualizer_plugin.register_routes(router)
     print(f"Plugin '{row_visualizer_plugin.__class__.__name__}' loaded successfully")
+    return row_visualizer_plugin
 
 
 @router.post("/get_row_visualization", response_class=Base64JSONResponse, response_model=None)
@@ -92,9 +94,10 @@ class SettingsResponse(BaseModel):
 async def get_settings() -> SettingsResponse:
     if row_visualizer_plugin is None:
         return SettingsResponse(plugin_name="", settings=[])
+
     settings = row_visualizer_plugin.plugin_settings()
     return SettingsResponse(
-        plugin_name=row_visualizer_plugin.__class__.__name__,
+        plugin_name=row_visualizer_plugin.get_name(),
         settings=[
             Setting(name=k, type=v.__class__.__name__, value=v)
             for k, v in settings.model_dump().items()
