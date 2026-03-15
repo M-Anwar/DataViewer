@@ -61,6 +61,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if config.plugin_path:
         load_row_visualizer_plugin()
 
+    if not getattr(app.state, "plugin_router_included", False):
+        app.include_router(plugin_router)
+        app.state.plugin_router_included = True
+
+    if not getattr(app.state, "frontend_mounted", False):
+        app.mount(
+            "/",
+            SPAStaticFiles(directory=str(FRONTEND_BUILD_DIR), html=True, check_dir=False),
+            name="frontend",
+        )
+        app.state.frontend_mounted = True
+
     yield
 
     print("Closing database connections...")
@@ -74,7 +86,6 @@ app = FastAPI(
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
 )
-app.include_router(plugin_router)
 
 
 @app.get("/api/ping", response_class=Base64JSONResponse, response_model=None)
@@ -327,10 +338,3 @@ async def redirect_redoc() -> RedirectResponse:
 @app.get("/openapi.json", include_in_schema=False, response_model=None)
 async def redirect_openapi() -> RedirectResponse:
     return RedirectResponse(url="/api/openapi.json")
-
-
-app.mount(
-    "/",
-    SPAStaticFiles(directory=str(FRONTEND_BUILD_DIR), html=True, check_dir=False),
-    name="frontend",
-)
