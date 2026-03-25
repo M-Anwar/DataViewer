@@ -22,7 +22,7 @@ async def initialize_connections(cache_path: str, table_hash: str) -> None:
     lancedb_table = lancedb_conn.open_table(table_hash)
 
     ibis_connection.con.execute("""
-        INSTALL lance FROM community;
+        INSTALL lance;
         LOAD lance;
     """)
 
